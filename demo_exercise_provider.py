@@ -10,7 +10,7 @@ from thonny.exercises import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 class DemoExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
         self.exercises_view = exercises_view
-        self.easy = Ez("http://dev.ems.lahendus.ut.ee", 'https://dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
+        self.easy = Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         # TODO: expect id's to be numbers?
@@ -73,11 +73,8 @@ class DemoExerciseProvider(ExerciseProvider):
         return html + submit_html, [(f"/student/courses/{course_id}/exercises/{exercise_id}", title)]
 
     def _get_submit_text(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
-        print("FD", form_data)
         source: str = form_data.get(EDITOR_CONTENT_NAME)
-        print(source)
         resp_code: int = self.easy.student.post_submission(course_id, exercise_id, source)
-
         return f"""
         <h1>Esitus</h1>
         <code>
