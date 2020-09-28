@@ -61,29 +61,40 @@ class DemoExerciseProvider(ExerciseProvider):
         self._auth()
         courses = self.easy.student.get_courses().courses
         format_c = [f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"]}</a></li>' for c in courses]
-        return f"<ul>{''.join(format_c)}</ul>", [("/student/courses", "Courses")]
+        return f"<ul>{''.join(format_c)}</ul>", [("/", "")]
 
     def _get_ex_list(self, course_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
         exercises = self.easy.student.get_course_exercises(course_id).exercises
-        course_name = [c["title"] for c in self.easy.student.get_courses().courses if c["id"] == course_id][0]
         format_e = [f'<li><a href="/student/courses/{course_id}/exercises/{e["id"]}">{e["effective_title"]}</a></li>'
                     for e in exercises]
-        return f"<ul>{''.join(format_e)}</ul>", [(f"/student/courses/{course_id}/exercises/", course_name)]
+        return f"<ul>{''.join(format_e)}</ul>", [(f"/student/courses/", "Kursused")]
 
     def _get_ex_text(self, course_id: str, exercise_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
         details = self.easy.student.get_exercise_details(course_id, exercise_id)
         html = details.text_html
-        title = details.effective_title
+        all_submissions = self.easy.student.get_all_submissions(course_id, exercise_id)
 
-        submit_html = f""" 
+        has_submissions = len(all_submissions.submissions) > 0
+        last_submission_times = ''.join([f"<li>{s['submission_time']}</li>" for s in all_submissions.submissions])
+        previous_html = f"""
+    
+            {f"<h1>Viimane esitus</h1>" if has_submissions else "Esitusi ei ole"}            
+            {f"<code>{all_submissions.submissions[0]['solution']}</code>" if has_submissions else ""}
+
+            {f"<h2>Eelmised esitused ({all_submissions.count})</h2>" if has_submissions else ""}
+            {f"<ul>{last_submission_times}</ul>" if has_submissions else ""}
+        """
+
+        submit_html = f"""
             <form action="/student/courses/{course_id}/exercises/{exercise_id}/submissions">
                 <input type="hidden" name="{EDITOR_CONTENT_NAME}" />
                 <input type="submit" value="Esita aktiivse redaktori sisu" />
-            </form>"""
+            </form>       
+        """
 
-        return html + submit_html, [(f"/student/courses/{course_id}/exercises/{exercise_id}", title)]
+        return html + previous_html + submit_html, [(f"/student/courses/{course_id}/exercises/", "Ülesanded")]
 
     def _get_submit_text(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
         source = form_data.get(EDITOR_CONTENT_NAME)
@@ -103,7 +114,7 @@ class DemoExerciseProvider(ExerciseProvider):
             <ul>
                 {''.join([f"<li>{s['submission_time']}</li>" for s in all_submissions.submissions])}            
             </ul>
-            """, []
+            """, [(f"/student/courses/{course_id}/exercises/{exercise_id}", "Ülesande kirjeldus")]
 
 
 def load_plugin():
