@@ -1,7 +1,7 @@
 import re
 from typing import Tuple, List
 
-from easy import Ez, ExerciseDetailsResp
+from easy import Ez, ExerciseDetailsResp, StudentAllSubmissionsResp
 
 from thonny import get_workbench
 from thonny.exercises import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
@@ -75,19 +75,20 @@ class DemoExerciseProvider(ExerciseProvider):
     def _get_submit_text(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
         source: str = form_data.get(EDITOR_CONTENT_NAME)
         resp_code: int = self.easy.student.post_submission(course_id, exercise_id, source)
+        prev: StudentAllSubmissionsResp = self.easy.student.get_all_submissions(course_id, exercise_id)
         return f"""
         <h1>Esitus</h1>
         <code>
-        {source}
+            {source}
         </code>
         <h2>Tulemus</h2>
         <h4>{resp_code}</h4>
 
         Priima töö!
         
-        <h2>Eelmised esitused</h2>
+        <h2>Eelmised esitused ({prev.count})</h2>
         <ul>
-            <li>2020-09-01 12:12:12</li>
+            {''.join([f"<li>{s['submission_time']}</li>" for s in prev.submissions])}            
         </ul>
         """, []
 
