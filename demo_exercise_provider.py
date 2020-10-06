@@ -2,6 +2,7 @@ import logging
 import re
 from typing import Tuple, List
 
+from easy.data import SubmissionResp
 from easy.exceptions import ErrorResponseException
 from easy.ez import Ez, AuthRequiredException
 
@@ -99,16 +100,18 @@ class DemoExerciseProvider(ExerciseProvider):
     def _get_submit_text(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
         source = form_data.get(EDITOR_CONTENT_NAME)
         self.easy.student.post_submission(course_id, exercise_id, source)
+        result: SubmissionResp = self.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
         all_submissions = self.easy.student.get_all_submissions(course_id, exercise_id)
 
         return f"""
             <h1>Esitus</h1>
             <code>
-                {source}
+                {result.solution}
             </code>
-            <h2>Tulemus</h2>
-    
-            Priima töö!
+            <h2>Tulemus: {result.grade_auto if result.grade_teacher is None else result.grade_teacher}</h2>
+            
+            {result.autograde_status}    
+            {result.feedback_auto if result.feedback_teacher is None else result.feedback_teacher}
             
             <h2>Eelmised esitused ({all_submissions.count})</h2>
             <ul>
