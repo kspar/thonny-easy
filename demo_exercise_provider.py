@@ -2,7 +2,6 @@ import logging
 import re
 from typing import Tuple, List
 
-from easy.data import SubmissionResp
 from easy.exceptions import ErrorResponseException
 from easy.ez import Ez, AuthRequiredException
 
@@ -25,7 +24,7 @@ class DemoExerciseProvider(ExerciseProvider):
             elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+$", url)):
                 course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
                 ex_id = url.split("/exercises/")[1]
-                return self._get_ex_text(course_id, ex_id)
+                return self._get_ex_description(course_id, ex_id)
 
             elif bool(re.match(r"^/student/courses$", url)) or url == "/":
                 return self._get_course_list()
@@ -33,7 +32,7 @@ class DemoExerciseProvider(ExerciseProvider):
             elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url)):
                 course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
                 ex_id = url.split("/exercises/")[1].replace("/submissions", "")
-                return self._get_submit_text(course_id, ex_id, form_data)
+                return self._submit_solution(course_id, ex_id, form_data)
 
             else:
                 return self._get_course_list()
@@ -61,63 +60,79 @@ class DemoExerciseProvider(ExerciseProvider):
     def _get_course_list(self) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
         courses = self.easy.student.get_courses().courses
-        format_c = [f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"]}</a></li>' for c in courses]
-        return f"<ul>{''.join(format_c)}</ul>", [("/", "")]
+        return self._generate_course_list_html(courses), [self._breadcrumb_courses()]
 
     def _get_ex_list(self, course_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
+
         exercises = self.easy.student.get_course_exercises(course_id).exercises
-        format_e = [f'<li><a href="/student/courses/{course_id}/exercises/{e["id"]}">{e["effective_title"]}</a></li>'
-                    for e in exercises]
-        return f"<ul>{''.join(format_e)}</ul>", [(f"/student/courses/", "Kursused")]
+        breadcrumb_ex_list = self._breadcrumb_exercises(course_id)
+        html = self._generate_exercise_list_html(breadcrumb_ex_list[0], exercises)
 
-    def _get_ex_text(self, course_id: str, exercise_id: str) -> Tuple[str, List[Tuple[str, str]]]:
+        return html, [self._breadcrumb_courses(), breadcrumb_ex_list]
+
+    def _get_ex_description(self, course_id: str, exercise_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
+
         details = self.easy.student.get_exercise_details(course_id, exercise_id)
-        html = details.text_html
-        all_submissions = self.easy.student.get_all_submissions(course_id, exercise_id)
+        last_submission_html = self._generate_latest_submissions_html(course_id, exercise_id)
+        submit_html = self._generate_submit_html(course_id, exercise_id)
 
-        has_submissions = len(all_submissions.submissions) > 0
-        last_submission_times = ''.join([f"<li>{s['submission_time']}</li>" for s in all_submissions.submissions])
-        previous_html = f"""
-    
-            {f"<h1>Viimane esitus</h1>" if has_submissions else "Esitusi ei ole"}            
-            {f"<code>{all_submissions.submissions[0]['solution']}</code>" if has_submissions else ""}
+        breadcrumb_this = (f"/student/courses/{course_id}/exercises/{exercise_id}", details.effective_title)
+        breadcrumbs = [self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
 
-            {f"<h2>Eelmised esitused ({all_submissions.count})</h2>" if has_submissions else ""}
-            {f"<ul>{last_submission_times}</ul>" if has_submissions else ""}
-        """
+        return f"{details.text_html}{last_submission_html}{submit_html}", breadcrumbs
 
+    def _submit_solution(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
+        self.easy.student.post_submission(course_id, exercise_id, form_data.get(EDITOR_CONTENT_NAME))
+        return self._get_ex_description(course_id, exercise_id)
+
+    def _get_course_name(self, course_id: str) -> str:
+        return [c for c in self.easy.student.get_courses().courses if c["id"] == course_id][0]["title"]
+
+    def _has_submissions(self, course_id: str, exercise_id: str) -> bool:
+        return len(self.easy.student.get_all_submissions(course_id, exercise_id).submissions) > 0
+
+    def _breadcrumb_exercises(self, course_id: str) -> Tuple[str, str]:
+        return f"/student/courses/{course_id}/exercises/", self._get_course_name(course_id)
+
+    def _breadcrumb_courses(self) -> Tuple[str, str]:
+        return f"/student/courses/", "Kursused"
+
+    def _generate_exercise_list_html(self, base_url, exercises):
+        ex_list = [f'<li><a href="{base_url}{e["id"]}">{e["effective_title"]}</a></li>' for e in exercises]
+        html = f"<ul>{''.join(ex_list)}</ul>"
+        return html
+
+    def _generate_course_list_html(self, courses):
+        format_c = [f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"]}</a></li>' for c in courses]
+        html = f"<ul>{''.join(format_c)}</ul>"
+        return html
+
+    def _generate_submit_html(self, course_id, exercise_id) -> str:
         submit_html = f"""
-            <form action="/student/courses/{course_id}/exercises/{exercise_id}/submissions">
-                <input type="hidden" name="{EDITOR_CONTENT_NAME}" />
-                <input type="submit" value="Esita aktiivse redaktori sisu" />
-            </form>       
-        """
+             <form action="/student/courses/{course_id}/exercises/{exercise_id}/submissions">
+                 <input type="hidden" name="{EDITOR_CONTENT_NAME}" />
+                 <input type="submit" value="Esita aktiivse redaktori sisu" />
+             </form>       
+         """
+        return submit_html
 
-        return html + previous_html + submit_html, [(f"/student/courses/{course_id}/exercises/", "Ülesanded")]
+    def _generate_latest_submissions_html(self, course_id, exercise_id) -> str:
+        if not self._has_submissions(course_id, exercise_id):
+            return ""
 
-    def _get_submit_text(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
-        source = form_data.get(EDITOR_CONTENT_NAME)
-        self.easy.student.post_submission(course_id, exercise_id, source)
-        result: SubmissionResp = self.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
-        all_submissions = self.easy.student.get_all_submissions(course_id, exercise_id)
-
+        latest = self.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
         return f"""
-            <h1>Esitus</h1>
-            <code>
-                {result.solution}
-            </code>
-            <h2>Tulemus: {result.grade_auto if result.grade_teacher is None else result.grade_teacher}</h2>
-            
-            {result.autograde_status}    
-            {result.feedback_auto if result.feedback_teacher is None else result.feedback_teacher}
-            
-            <h2>Eelmised esitused ({all_submissions.count})</h2>
-            <ul>
-                {''.join([f"<li>{s['submission_time']}</li>" for s in all_submissions.submissions])}            
-            </ul>
-            """, [(f"/student/courses/{course_id}/exercises/{exercise_id}", "Ülesande kirjeldus")]
+                 <h1>Viimane esitus</h1>
+                 <code>
+                     {latest.solution}
+                 </code>
+                 <h2>Viimane tulemus: {latest.grade_auto if latest.grade_teacher is None else latest.grade_teacher}</h2>
+
+                 {latest.autograde_status}    
+                 {latest.feedback_auto if latest.feedback_teacher is None else latest.feedback_teacher}
+        """
 
 
 def load_plugin():
