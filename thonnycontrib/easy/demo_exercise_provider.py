@@ -19,7 +19,7 @@ class DemoExerciseProvider(ExerciseProvider):
         elif url == "/ex2/submit":
             return (self._get_submit_text(form_data), [("/", "Home"), ("/ex1", "Ülesanne 1")])
         else:
-            return (self._get_ex_list(), [("/", "Home")])
+            return (self._get_benchmark_page(), [("/", "Home")])
 
     def _get_ex_list(self):
         return """
@@ -27,6 +27,47 @@ class DemoExerciseProvider(ExerciseProvider):
                 <li><a href="/ex1">Ülesanne 1</a></li>
                 <li><a href="/ex2">Ülesanne 2</a></li>
             </ul>
+        """
+
+    def _get_benchmark_page(self):
+        return """
+<div class="paragraph"> 
+ <p>Alates 2014. aastast on Eesti Lepidopteroloogide Selts igal aastal valinud aasta liblika. Tänavune aasta liblikas on <a href="https://et.wikipedia.org/wiki/Teelehe-mosaiikliblikas" target="_blank" rel="noopener noreferrer">teelehe-mosaiikliblikas</a>.</p> 
+</div> 
+<div class="imageblock"> 
+ <div class="content"> 
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Marsh_fritillary_%28Euphydryas_aurinia%29_male.jpg/1280px-Marsh_fritillary_%28Euphydryas_aurinia%29_male.jpg" alt="euphydryas_aurinia" width="350"> 
+ </div> 
+</div> 
+<div class="paragraph"> 
+ <p>Koostada programm, mille</p> 
+</div> 
+<div class="ulist"> 
+ <ul> 
+  <li> <p>1. real luuakse muutuja nimega <code>aasta</code> ning antakse sellele väärtuseks <code>2020</code> (arvuna);</p> </li> 
+  <li> <p>2. real luuakse muutuja nimega <code>liblikas</code> ning antakse sellele väärtuseks <code>"teelehe-mosaiikliblikas"</code> (sõnena);</p> </li> 
+  <li> <p>3. real luuakse muutuja nimega <code>lause_keskosa</code> ning antakse sellele väärtuseks <code>". aasta liblikas on "</code> (sõnena);</p> </li> 
+  <li> <p>4. real luuakse muutuja nimega <code>lause</code>, mille väärtuse saamiseks ühendatakse üheks sõnaks muutujad <code>aasta</code>, <code>lause_keskosa</code> ja <code>liblikas</code> (vajadusel tuleb kasutada funktsiooni, mis teisendab arvu sõneks);</p> </li> 
+  <li> <p>5. real väljastatakse muutuja <code>lause</code> väärtus ekraanile.</p> </li> 
+ </ul> 
+</div> 
+<div class="paragraph"> 
+ <p>Kuigi tegelikult pannakse lause lõppu punkt, siis siin ärge pange. (Automaatkontroll isegi annab punkti või mõne muu üleliigse osa korral veateate.)</p>
+</div>
+<details>
+<summary class="title">Näited programmi tööst</summary> 
+ <div class="content"> 
+  <div class="listingblock"> 
+   <div class="content"> 
+    <pre class="highlightjs highlight"><code data-lang="python" class="language-python hljs">&gt;&gt;&gt; <span class="codehl run">%Run yl1.2.py</span>
+  <span class="codehl nohl">2020. aasta liblikas on teelehe-mosaiikliblikas</span></code></pre> 
+   </div> 
+  </div> 
+ </div> 
+</details> 
+<div class="paragraph"> 
+ <p>Kui olete juba hulk aega proovinud ülesannet iseseisvalt lahendada ja see ikka ei õnnestu, siis võib-olla saate abi <a href="https://progtugi.cs.ut.ee#/ts/5e57914b50ad8d0325d312fb/" target="_blank" rel="noopener noreferrer">murelahendajalt</a>. Püütud on tüüpilisemaid probleemseid kohti selgitada ja anda vihjeid.</p> 
+</div>        
         """
 
     def _get_ex_text(self, num):

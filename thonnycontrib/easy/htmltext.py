@@ -6,7 +6,11 @@ from typing import List, Tuple, Any
 
 from thonny import tktextext, ui_utils
 from thonny.codeview import get_syntax_options_for_tag
+from thonny.ui_utils import ems_to_pixels
 
+NBSP = "\u00A0"
+UL_LI_MARKER = "•" + NBSP
+VERTICAL_SPACER = NBSP + "\n"
 
 class HtmlText(tktextext.TweakableText):
     def __init__(self, master, renderer_class, link_and_form_handler, read_only=False, **kw):
@@ -56,10 +60,14 @@ class HtmlText(tktextext.TweakableText):
         underline_font = main_font.copy()
         underline_font.configure(underline=True)
 
+        fixed_font = tkfont.nametofont("TkFixedFont")
+        fixed_bold_font = fixed_font.copy()
+        fixed_bold_font.configure(weight="bold", size=fixed_font.cget("size"))
+
         self.tag_configure("h1", font=h1_font, spacing3=5)
         self.tag_configure("h2", font=h2_font, spacing3=5)
         self.tag_configure("h3", font=h3_font, spacing3=5)
-        self.tag_configure("p", spacing1=0, spacing3=10, spacing2=0)
+        #self.tag_configure("p", spacing1=0, spacing3=10, spacing2=0)
         self.tag_configure("line_block", spacing1=0, spacing3=10, spacing2=0)
         self.tag_configure("em", font=italic_font)
         self.tag_configure("strong", font=bold_font)
@@ -77,34 +85,25 @@ class HtmlText(tktextext.TweakableText):
         self.tag_bind("a", "<Enter>", self._hyperlink_enter)
         self.tag_bind("a", "<Leave>", self._hyperlink_leave)
 
-        self.tag_configure("topic_title", lmargin2=16, font=bold_font)
-        self.tag_configure("topic_body", lmargin1=16, lmargin2=16)
         self.tag_configure(
             "code",
-            font="TkFixedFont",
-            # wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
-            # background="#eeeeee"
+            font=fixed_bold_font,
+            wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
+            background="#eeeeee",
+            lmargincolor="white"
         )
         # if ui_utils.get_tk_version_info() >= (8,6,6):
         #    self.tag_configure("code", lmargincolor=self["background"])
 
+        li_indent = main_font.measure("m")
+        li_bullet_width = main_font.measure(UL_LI_MARKER)
         for i in range(1, 6):
-            self.tag_configure("list%d" % i, lmargin1=i * 10, lmargin2=i * 10 + 10)
+            indent = i * li_indent
+            self.tag_configure("list%d" % i, lmargin1=indent,
+                               lmargin2=indent + li_bullet_width)
 
-        toti_code_font = bold_font.copy()
-        toti_code_font.configure(
-            family=tk.font.nametofont("TkFixedFont").cget("family"), size=bold_font.cget("size")
-        )
-        self.tag_configure("topic_title_code", font=toti_code_font)
-        self.tag_raise("topic_title_code", "code")
-        self.tag_raise("topic_title_code", "topic_title")
-        self.tag_raise("a", "topic_title")
 
-        # TODO: topic_title + em
-        self.tag_raise("em", "topic_title")
         self.tag_raise("a", "em")
-        self.tag_raise("a", "topic_body")
-        self.tag_raise("a", "topic_title")
 
         if ui_utils.get_tk_version_info() >= (8, 6, 6):
             self.tag_configure("sel", lmargincolor=self["background"])
@@ -114,8 +113,8 @@ class HtmlText(tktextext.TweakableText):
         self._renderer = self._renderer_class(self, self._link_and_form_handler)
 
     def clear(self):
-        self.direct_delete("1.0", "end")
-        self.tag_delete("1.0", "end")
+        self.direct_delete("1.0", "mark")
+        self.tag_delete("1.0", "mark")
         self._reset_renderer()
 
     def _hyperlink_click(self, event):
@@ -138,13 +137,17 @@ class HtmlRenderer(HTMLParser):
     def __init__(self, text_widget, link_and_form_handler):
         super().__init__()
         self.widget = text_widget
-        self.widget.mark_set("mark", "end")
+
+        # inserting at "end" acts funny, so I'm creating a mark instead
+        self.widget.direct_insert("end", "\n")
+        self.widget.mark_set("mark", "1.0")
+
         self._link_and_form_handler = link_and_form_handler
         self._unique_tag_count = 0
         self._context_tags = []
         self._active_lists = []
         self._active_forms = []
-        self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "code", "form", "h1", "h2"]
+        self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "form", "h1", "h2", "summary", "details"]
         self._alternatives = {"b": "strong", "i": "em"}
         self._simple_tags = ["strong", "u", "em"]
         self._ignored_tags = ["span"]
@@ -159,7 +162,7 @@ class HtmlRenderer(HTMLParser):
             self._active_attrs_by_tag[tag] = attrs
 
         if tag in self._block_tags:
-            self._ensure_new_line()
+            self._add_block_divider(tag)
 
         self._add_tag(tag)
 
@@ -171,9 +174,10 @@ class HtmlRenderer(HTMLParser):
             self._active_lists.append("ol")
         elif tag == "li":
             if self._active_lists[-1] == "ul":
-                self._append_text("• ")
+                self._append_text(UL_LI_MARKER)
             elif self._active_lists[-1] == "ol":
-                self._append_text("? ")
+                # TODO:
+                self._append_text(UL_LI_MARKER)
         elif tag == "form":
             form = attrs.copy()
             form["inputs"] = []
@@ -207,7 +211,7 @@ class HtmlRenderer(HTMLParser):
 
         # prepare for next piece of text
         if tag in self._block_tags:
-            self._ensure_new_line()
+            self._add_block_divider(tag)
 
     def handle_data(self, data):
         self._append_text(self._prepare_text(data))
@@ -225,10 +229,22 @@ class HtmlRenderer(HTMLParser):
     def _add_tag(self, tag):
         self._context_tags.append(tag)
 
-    def _ensure_new_line(self):
-        last_line_without_spaces = self.widget.get("end-2l linestart", "end-1c").replace(" ", "")
-        if not last_line_without_spaces.endswith("\n"):
-            self.widget.direct_insert("end-1c", "\n")
+    def _add_block_divider(self, tag):
+        if tag == "p" and self._context_tags[-1] == "li":
+            return
+
+        # replace all trailing whitespace with a single linebreak
+        while self.widget.get("mark-1c", "mark") in ["\r", "\n", "\t", " "]:
+            self.widget.direct_delete("mark-1c")
+        self.widget.direct_insert("mark", "\n")
+
+        # For certain tags add vertical spacer (if it's not there already)
+        if (tag in ("p", "ul", "ol", "summary", "details", "table")
+                and self.widget.get("mark-2c", "mark") != VERTICAL_SPACER
+                and self.widget.index("mark-1c linestart") != "1.0"):
+            self.widget.direct_insert("mark", VERTICAL_SPACER)
+
+        #if self.widget.get("mark-1c", "mark") != NBSP:
 
     def _pop_tag(self, tag):
         while self._context_tags and self._context_tags[-1] != tag:
@@ -250,26 +266,34 @@ class HtmlRenderer(HTMLParser):
             self._active_lists.pop()
 
     def _prepare_text(self, text):
-        if self._context_tags and self._context_tags[-1] in ["pre", "code"]:
+        if "pre" not in self._context_tags and "code" not in self._context_tags:
             text = text.replace("\n", " ").replace("\r", " ")
             while "  " in text:
                 text = text.replace("  ", " ")
 
-        if self._should_trim_whitespace():
-            text = text.strip()
-
         return text
-
-    def _should_trim_whitespace(self):
-        for tag in reversed(self._context_tags):
-            if self._is_link_tag(tag):
-                continue
-            return tag in self._block_tags
-
-        return True
 
     def _append_text(self, chars, extra_tags=()):
         # print("APPP", chars, tags)
+        # don't put two horizontal whitespaces next to each other
+        trailing_space = False
+        trailing_tags = set()
+        while self.widget.get("mark-1c") in (" ", "\t"):
+            trailing_space = True
+            trailing_tags.update(self.widget.tag_names("mark-1c"))
+            self.widget.direct_delete("mark-1c")
+
+        last_non_horspace = self.widget.get("mark-1c")
+        if last_non_horspace in ["\n", NBSP]:
+            # don't keep space in the beginning of the line
+            trailing_space = False
+            chars.lstrip(" \t")
+
+        if (trailing_space and not chars.startswith(" ")
+            and not chars.startswith("\t")):
+            # Restore the required space
+            self.widget.direct_insert("mark", " ", tags=tuple(trailing_tags))
+
         self.widget.direct_insert("mark", chars, self._get_effective_tags(extra_tags))
 
     def _append_submit_button(self, attrs):
