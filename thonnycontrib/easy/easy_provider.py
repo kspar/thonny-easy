@@ -5,11 +5,11 @@ from typing import Tuple, List
 from easy.exceptions import ErrorResponseException
 from easy.ez import Ez, AuthRequiredException
 
-from thonny import get_workbench
-from thonny.exercises import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
+from thonnycontrib.easy.framework import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
+HOME_LINK = ("/", "Home")
 
-class DemoExerciseProvider(ExerciseProvider):
+class EasyExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
         self.exercises_view = exercises_view
         self.easy = Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
@@ -60,7 +60,7 @@ class DemoExerciseProvider(ExerciseProvider):
     def _get_course_list(self) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
         courses = self.easy.student.get_courses().courses
-        return self._generate_course_list_html(courses), [self._breadcrumb_courses()]
+        return self._generate_course_list_html(courses), [HOME_LINK, self._breadcrumb_courses()]
 
     def _get_ex_list(self, course_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
@@ -69,7 +69,7 @@ class DemoExerciseProvider(ExerciseProvider):
         breadcrumb_ex_list = self._breadcrumb_exercises(course_id)
         html = self._generate_exercise_list_html(breadcrumb_ex_list[0], exercises)
 
-        return html, [self._breadcrumb_courses(), breadcrumb_ex_list]
+        return html, [HOME_LINK, self._breadcrumb_courses(), breadcrumb_ex_list]
 
     def _get_ex_description(self, course_id: str, exercise_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         self._auth()
@@ -79,7 +79,7 @@ class DemoExerciseProvider(ExerciseProvider):
         submit_html = self._generate_submit_html(course_id, exercise_id)
 
         breadcrumb_this = (f"/student/courses/{course_id}/exercises/{exercise_id}", details.effective_title)
-        breadcrumbs = [self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
+        breadcrumbs = [HOME_LINK, self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
 
         return f"{details.text_html}{last_submission_html}{submit_html}", breadcrumbs
 
@@ -135,5 +135,3 @@ class DemoExerciseProvider(ExerciseProvider):
         """
 
 
-def load_plugin():
-    get_workbench().add_exercise_provider("demo", "Lahendus", DemoExerciseProvider)
