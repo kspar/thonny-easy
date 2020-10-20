@@ -5,7 +5,7 @@ from typing import Tuple, List
 from easy.exceptions import ErrorResponseException
 from easy.ez import Ez, AuthRequiredException
 
-from thonnycontrib.easy.framework import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
+from thonnycontrib.easy.ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
 HOME_LINK = ("/", "Home")
 
