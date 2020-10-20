@@ -39,9 +39,12 @@ class ExercisesView(ttk.Frame):
             insertwidth=0,
             borderwidth=0,
             highlightthickness=0,
+            yscrollcommand=self.vert_scrollbar.set
         )
 
         self._html_widget.grid(row=1, column=0, sticky="nsew")
+
+        self.vert_scrollbar["command"] = self._html_widget.yview
 
         # TODO: go to last page from previous session?
         self.go_to("/")
