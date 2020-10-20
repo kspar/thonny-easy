@@ -87,9 +87,17 @@ class HtmlText(tktextext.TweakableText):
 
         self.tag_configure(
             "code",
-            font=fixed_bold_font,
+            font=fixed_font,
+            #wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
+            background="#eeeeee",
+            lmargincolor="white"
+        )
+        self.tag_configure(
+            "pre",
+            font=fixed_font,
             wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
             background="#eeeeee",
+            rmargincolor="#eeeeee",
             lmargincolor="white"
         )
         # if ui_utils.get_tk_version_info() >= (8,6,6):
@@ -236,7 +244,8 @@ class HtmlRenderer(HTMLParser):
         # replace all trailing whitespace with a single linebreak
         while self.widget.get("mark-1c", "mark") in ["\r", "\n", "\t", " "]:
             self.widget.direct_delete("mark-1c")
-        self.widget.direct_insert("mark", "\n")
+
+        self.widget.direct_insert("mark", "\n", tags=self.widget.tag_names("mark-1c"))
 
         # For certain tags add vertical spacer (if it's not there already)
         if (tag in ("p", "ul", "ol", "summary", "details", "table")
