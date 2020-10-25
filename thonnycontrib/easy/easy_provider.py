@@ -82,7 +82,7 @@ class EasyExerciseProvider(ExerciseProvider):
         breadcrumb_this = (f"/student/courses/{course_id}/exercises/{exercise_id}", details.effective_title)
         breadcrumbs = [HOME_LINK, self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
 
-        return f"{details.text_html}{last_submission_html}{submit_html}", breadcrumbs
+        return f"<h1>{details.effective_title}</h1>{details.text_html}{last_submission_html}{submit_html}", breadcrumbs
 
     def _submit_solution(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
         self.easy.student.post_submission(course_id, exercise_id, form_data.get(EDITOR_CONTENT_NAME))
@@ -124,13 +124,37 @@ class EasyExerciseProvider(ExerciseProvider):
             return ""
 
         latest = self.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
-        return f"""
-                 <h1>Viimane esitus</h1>
-                 <code>
-                     {latest.solution}
-                 </code>
-                 <h2>Viimane tulemus: {latest.grade_auto if latest.grade_teacher is None else latest.grade_teacher}</h2>
 
-                 {latest.autograde_status}    
-                 {latest.feedback_auto if latest.feedback_teacher is None else latest.feedback_teacher}
+        if latest.grade_teacher is None:
+            teacher_feedback = ""
+        else:
+            teacher_feedback = f"""
+            <h2>Õpetaja hinnang</h2>       
+
+            <div>{latest.feedback_teacher} </div> 
+
+            <div>Hinne: {latest.grade_teacher}/100</div> 
+            """
+
+        return f"""
+                <h1>Esitamine</h1>
+            
+                <h2>Automaatne hinnang</h2>
+
+                <div>Automaatne hinne: {latest.grade_auto}/100</div> 
+                
+                <div>
+                    <code>
+                    {latest.feedback_auto}
+                    </code>
+                </div> 
+
+                <div>{teacher_feedback}</div> 
+
+                <h2>Viimane esitus</h2>
+                <div>
+                    <code>
+                    {latest.solution}
+                    </code>
+                </div> 
         """
