@@ -1,12 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from typing import Tuple, List, Any
+from typing import Tuple, List
 
 from thonny import tktextext, get_workbench
 from thonny.ui_utils import scrollbar_style, lookup_style_option
-from thonnycontrib.easy.htmltext import FormData, HtmlText, HtmlRenderer
+
+from thonnycontrib.thonny_easy.htmltext import FormData, HtmlText, HtmlRenderer
 
 EDITOR_CONTENT_NAME = "$EDITOR_CONTENT"
+
 
 class ExercisesView(ttk.Frame):
     def __init__(self, master, exercise_provider_class):
@@ -195,7 +197,5 @@ class ExerciseHtmlRenderer(HtmlRenderer):
 
 
 class ExerciseProvider:
-    def get_html_and_breadcrumbs(
-        self, url: str, form_data: FormData
-    ) -> Tuple[str, List[Tuple[str, str]]]:
+    def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         raise NotImplementedError()

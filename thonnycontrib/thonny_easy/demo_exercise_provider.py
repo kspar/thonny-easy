@@ -1,6 +1,6 @@
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List
 
-from thonnycontrib.easy.ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
+from thonnycontrib.thonny_easy.ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
 
 class DemoExerciseProvider(ExerciseProvider):
@@ -8,7 +8,7 @@ class DemoExerciseProvider(ExerciseProvider):
         self.exercises_view = exercises_view
 
     def get_html_and_breadcrumbs(
-        self, url: str, form_data: FormData
+            self, url: str, form_data: FormData
     ) -> Tuple[str, List[Tuple[str, str]]]:
         if url == "/ex1":
             return (self._get_ex_text(1), [("/", "Home"), ("/ex1", "Ülesanne 1")])
@@ -105,4 +105,3 @@ class DemoExerciseProvider(ExerciseProvider):
         """.format(
             source=source
         )
-

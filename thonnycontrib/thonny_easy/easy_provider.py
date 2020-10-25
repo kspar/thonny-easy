@@ -2,12 +2,13 @@ import logging
 import re
 from typing import Tuple, List
 
-from easy.exceptions import ErrorResponseException
-from easy.ez import Ez, AuthRequiredException
+from easy import ErrorResponseException
+from easy import Ez, AuthRequiredException
 
-from thonnycontrib.easy.ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
+from thonnycontrib.thonny_easy.ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
 HOME_LINK = ("/", "Home")
+
 
 class EasyExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
@@ -133,5 +134,3 @@ class EasyExerciseProvider(ExerciseProvider):
                  {latest.autograde_status}    
                  {latest.feedback_auto if latest.feedback_teacher is None else latest.feedback_teacher}
         """
-
-
