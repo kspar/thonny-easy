@@ -1,16 +1,16 @@
 import tkinter as tk
 import tkinter.font as tkfont
-from tkinter import ttk
 from html.parser import HTMLParser
+from tkinter import ttk
 from typing import List, Tuple, Any
 
 from thonny import tktextext, ui_utils
 from thonny.codeview import get_syntax_options_for_tag
-from thonny.ui_utils import ems_to_pixels
 
 NBSP = "\u00A0"
 UL_LI_MARKER = "•" + NBSP
 VERTICAL_SPACER = NBSP + "\n"
+
 
 class HtmlText(tktextext.TweakableText):
     def __init__(self, master, renderer_class, link_and_form_handler, read_only=False, **kw):
@@ -67,7 +67,7 @@ class HtmlText(tktextext.TweakableText):
         self.tag_configure("h1", font=h1_font, spacing3=5)
         self.tag_configure("h2", font=h2_font, spacing3=5)
         self.tag_configure("h3", font=h3_font, spacing3=5)
-        #self.tag_configure("p", spacing1=0, spacing3=10, spacing2=0)
+        # self.tag_configure("p", spacing1=0, spacing3=10, spacing2=0)
         self.tag_configure("line_block", spacing1=0, spacing3=10, spacing2=0)
         self.tag_configure("em", font=italic_font)
         self.tag_configure("strong", font=bold_font)
@@ -88,14 +88,14 @@ class HtmlText(tktextext.TweakableText):
         self.tag_configure(
             "code",
             font=fixed_font,
-            #wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
+            # wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
             background="#eeeeee",
             lmargincolor="white"
         )
         self.tag_configure(
             "pre",
             font=fixed_font,
-            wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
+            wrap="none",  # TODO: needs automatic hor-scrollbar and better padding mgmt
             background="#eeeeee",
             rmargincolor="#eeeeee",
             lmargincolor="white"
@@ -109,7 +109,6 @@ class HtmlText(tktextext.TweakableText):
             indent = i * li_indent
             self.tag_configure("list%d" % i, lmargin1=indent,
                                lmargin2=indent + li_bullet_width)
-
 
         self.tag_raise("a", "em")
 
@@ -253,7 +252,7 @@ class HtmlRenderer(HTMLParser):
                 and self.widget.index("mark-1c linestart") != "1.0"):
             self.widget.direct_insert("mark", VERTICAL_SPACER)
 
-        #if self.widget.get("mark-1c", "mark") != NBSP:
+        # if self.widget.get("mark-1c", "mark") != NBSP:
 
     def _pop_tag(self, tag):
         while self._context_tags and self._context_tags[-1] != tag:
@@ -299,7 +298,7 @@ class HtmlRenderer(HTMLParser):
             chars.lstrip(" \t")
 
         if (trailing_space and not chars.startswith(" ")
-            and not chars.startswith("\t")):
+                and not chars.startswith("\t")):
             # Restore the required space
             self.widget.direct_insert("mark", " ", tags=tuple(trailing_tags))
 
@@ -328,7 +327,6 @@ class HtmlRenderer(HTMLParser):
                 return
             elif value is not None:
                 form_data.add(attrs["name"], value)
-
 
         # TODO: support default action
         # TODO: support GET forms
@@ -383,6 +381,7 @@ class HtmlRenderer(HTMLParser):
 
         return tuple(sorted(tags))
 
+
 class FormData:
     """Used for representing form fields"""
 
@@ -428,4 +427,3 @@ class FormData:
 
     def __bool__(self):
         return bool(len(self.pairs))
-

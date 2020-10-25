@@ -1,8 +1,8 @@
 from thonny import get_workbench
 
-from thonnycontrib.thonny_easy.demo_exercise_provider import DemoExerciseProvider
-from thonnycontrib.thonny_easy.easy_provider import EasyExerciseProvider
-from thonnycontrib.thonny_easy.ui import ExercisesView
+from thonnycontrib.easy.demo_exercise_provider import DemoExerciseProvider
+from thonnycontrib.easy.easy_provider import EasyExerciseProvider
+from thonnycontrib.easy.ui import ExercisesView
 
 
 class EasyExercisesView(ExercisesView):

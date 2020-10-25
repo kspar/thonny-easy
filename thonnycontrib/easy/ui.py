@@ -5,7 +5,7 @@ from typing import Tuple, List
 from thonny import tktextext, get_workbench
 from thonny.ui_utils import scrollbar_style, lookup_style_option
 
-from thonnycontrib.thonny_easy.htmltext import FormData, HtmlText, HtmlRenderer
+from .htmltext import FormData, HtmlText, HtmlRenderer
 
 EDITOR_CONTENT_NAME = "$EDITOR_CONTENT"
 

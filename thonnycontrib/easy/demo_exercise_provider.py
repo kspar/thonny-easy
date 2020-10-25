@@ -1,6 +1,6 @@
 from typing import Tuple, List
 
-from thonnycontrib.thonny_easy.ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
+from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
 
 class DemoExerciseProvider(ExerciseProvider):
