@@ -7,7 +7,7 @@ from easy import Ez, AuthRequiredException
 
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
-HOME_LINK = ("/", "Home")
+HOME_LINK = ("/", "Lahendus")
 
 
 class EasyExerciseProvider(ExerciseProvider):
@@ -35,6 +35,12 @@ class EasyExerciseProvider(ExerciseProvider):
                 ex_id = url.split("/exercises/")[1].replace("/submissions", "")
                 return self._submit_solution(course_id, ex_id, form_data)
 
+            elif url == "/auth":
+                form_url = form_data.get("from")
+                next_url = "/" if form_url is None else form_url
+                self._auth()
+                return self.get_html_and_breadcrumbs(next_url, form_data)
+
             else:
                 return self._get_course_list()
 
@@ -42,7 +48,7 @@ class EasyExerciseProvider(ExerciseProvider):
             return f"Päring Lahendusega ebaõnnestus!", []
 
         except AuthRequiredException:
-            return f"Autentimine ebaõnnestus! Palun proovige uuesti!", []
+            return self._generate_login_html(url), []
 
         except KeyError:
             return "Lahenduse serveri vastuse lugemine ebaõnnestus! Kas kasutusel on kõige viimane Thonny versioon?", []
@@ -59,13 +65,10 @@ class EasyExerciseProvider(ExerciseProvider):
             logging.info('Authenticated!')
 
     def _get_course_list(self) -> Tuple[str, List[Tuple[str, str]]]:
-        self._auth()
         courses = self.easy.student.get_courses().courses
         return self._generate_course_list_html(courses), [HOME_LINK, self._breadcrumb_courses()]
 
     def _get_ex_list(self, course_id: str) -> Tuple[str, List[Tuple[str, str]]]:
-        self._auth()
-
         exercises = self.easy.student.get_course_exercises(course_id).exercises
         breadcrumb_ex_list = self._breadcrumb_exercises(course_id)
         html = self._generate_exercise_list_html(breadcrumb_ex_list[0], exercises)
@@ -73,8 +76,6 @@ class EasyExerciseProvider(ExerciseProvider):
         return html, [HOME_LINK, self._breadcrumb_courses(), breadcrumb_ex_list]
 
     def _get_ex_description(self, course_id: str, exercise_id: str) -> Tuple[str, List[Tuple[str, str]]]:
-        self._auth()
-
         details = self.easy.student.get_exercise_details(course_id, exercise_id)
         last_submission_html = self._generate_latest_submissions_html(course_id, exercise_id)
         submit_html = self._generate_submit_html(course_id, exercise_id)
@@ -119,9 +120,22 @@ class EasyExerciseProvider(ExerciseProvider):
          """
         return submit_html
 
+    def _generate_login_html(self, from_url) -> str:
+        if from_url is None:
+            from_url = "/"
+
+        return f"""
+            <h1>Autendi</h1>
+
+            <form action="/auth">
+                 <input type="hidden" name="from" value="{from_url}"/>
+                 <input type="submit" value="Ava veebilehitseja autentimiseks" />
+            </form>                    
+        """
+
     def _generate_latest_submissions_html(self, course_id, exercise_id) -> str:
         if not self._has_submissions(course_id, exercise_id):
-            return ""
+            return "<h1>Esitamine</h1>"
 
         latest = self.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
 
@@ -138,11 +152,11 @@ class EasyExerciseProvider(ExerciseProvider):
 
         return f"""
                 <h1>Esitamine</h1>
-            
+
                 <h2>Automaatne hinnang</h2>
 
                 <div>Automaatne hinne: {latest.grade_auto}/100</div> 
-                
+
                 <div>
                     <code>
                     {latest.feedback_auto}
