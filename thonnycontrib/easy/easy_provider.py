@@ -158,17 +158,13 @@ class EasyExerciseProvider(ExerciseProvider):
                 <div>Automaatne hinne: {latest.grade_auto}/100</div> 
 
                 <div>
-                    <code>
-                    {latest.feedback_auto}
-                    </code>
+                    <code>{latest.feedback_auto}</code>
                 </div> 
 
                 <div>{teacher_feedback}</div> 
 
                 <h2>Viimane esitus</h2>
                 <div>
-                    <code>
-                    {latest.solution}
-                    </code>
+                    <code>{latest.solution}</code>
                 </div> 
         """
