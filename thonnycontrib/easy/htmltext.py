@@ -237,7 +237,7 @@ class HtmlRenderer(HTMLParser):
         self._context_tags.append(tag)
 
     def _add_block_divider(self, tag):
-        if tag == "p" and self._context_tags[-1] == "li":
+        if tag == "p" and self._context_tags and self._context_tags[-1] == "li":
             return
 
         # replace all trailing whitespace with a single linebreak

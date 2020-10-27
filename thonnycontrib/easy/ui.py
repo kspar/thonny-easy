@@ -1,6 +1,8 @@
+import concurrent.futures
 import tkinter as tk
+import traceback
 from tkinter import ttk, messagebox
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from thonny import tktextext, get_workbench
 from thonny.ui_utils import scrollbar_style, lookup_style_option
@@ -9,11 +11,14 @@ from .htmltext import FormData, HtmlText, HtmlRenderer
 
 EDITOR_CONTENT_NAME = "$EDITOR_CONTENT"
 
-
 class ExercisesView(ttk.Frame):
     def __init__(self, master, exercise_provider_class):
+        self._destroyed = False
         super().__init__(master, borderwidth=0, relief="flat")
+
         self._provider = exercise_provider_class(self)
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=self._provider.get_max_threads())
+        self._page_future = None # type: Optional[concurrent.futures.Future]
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
@@ -48,8 +53,33 @@ class ExercisesView(ttk.Frame):
 
         self.vert_scrollbar["command"] = self._html_widget.yview
 
+        self._poll_scheduler = None
+
         # TODO: go to last page from previous session?
         self.go_to("/")
+        self._poll_provider_responses()
+
+    def _poll_provider_responses(self):
+        if self._destroyed:
+            return
+
+        if self._page_future is not None and self._page_future.done():
+            # Cancelled futures won't make it here
+            assert not self._page_future.cancelled()
+
+            exc = self._page_future.exception()
+            if exc is not None:
+                self._set_page_html("<pre>%s</pre>" %
+                                    "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+                                    )
+            else:
+                html, breadcrumbs = self._page_future.result()
+                self._set_page_html(html)
+                self.breadcrumbs_bar.set_links(breadcrumbs)
+
+            self._page_future = None
+
+        self._poll_scheduler = self.after(200, self._poll_provider_responses)
 
     def init_header(self, row, column):
         header_frame = ttk.Frame(self, style="ViewToolbar.TFrame")
@@ -68,30 +98,45 @@ class ExercisesView(ttk.Frame):
         self.menu_button.place(anchor="ne", rely=0, relx=1)
 
     def _on_request_new_page(self, target, form_data=None):
-        print("target", target)
         if target.startswith("/"):
             self.go_to(target, form_data=form_data)
         else:
             get_workbench().open_url(target)
 
     def post_button_menu(self):
+        """
         self.refresh_menu(context="button")
         self.menu.tk_popup(
             self.menu_button.winfo_rootx(),
             self.menu_button.winfo_rooty() + self.menu_button.winfo_height(),
         )
+        """
 
     def go_to(self, url, form_data=None):
         if form_data is None:
             form_data = FormData()
 
         assert url.startswith("/")
-        html, breadcrumbs = self._provider.get_html_and_breadcrumbs(url, form_data)
-        self._set_page_html(html)
-        self.breadcrumbs_bar.set_links(breadcrumbs)
+        if self._page_future is not None:
+            self._page_future.cancel()
+
+        self._page_future = self._executor.submit(
+            self._provider.get_html_and_breadcrumbs, url, form_data)
+        self._set_page_html("<p>Please wait...</p>")
 
     def _set_page_html(self, html):
         self._html_widget.set_html_content(html)
+
+    def destroy(self):
+        if self._poll_scheduler is not None:
+            try:
+                self.after_cancel(self._poll_scheduler)
+                self._poll_scheduler = None
+            except:
+                pass
+
+        super(ExercisesView, self).destroy()
+        self._destroyed = True
 
 
 class BreadcrumbsBar(tktextext.TweakableText):
@@ -199,3 +244,9 @@ class ExerciseHtmlRenderer(HtmlRenderer):
 class ExerciseProvider:
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         raise NotImplementedError()
+
+    def get_image(self, url):
+        raise NotImplementedError()
+
+    def get_max_threads(self):
+        return 10

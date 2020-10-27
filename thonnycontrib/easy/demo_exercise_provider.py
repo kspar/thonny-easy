@@ -1,3 +1,4 @@
+import time
 from typing import Tuple, List
 
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
@@ -10,6 +11,8 @@ class DemoExerciseProvider(ExerciseProvider):
     def get_html_and_breadcrumbs(
             self, url: str, form_data: FormData
     ) -> Tuple[str, List[Tuple[str, str]]]:
+        time.sleep(2)
+        #raise RuntimeError("Not right")
         if url == "/ex1":
             return (self._get_ex_text(1), [("/", "Home"), ("/ex1", "Ülesanne 1")])
         elif url == "/ex2":
