@@ -17,4 +17,4 @@ class DemoExercisesView(ExercisesView):
 
 def load_plugin():
     # get_workbench().add_view(DemoExercisesView, "DemoEx", "ne")
-    get_workbench().add_view(EasyExercisesView, "Easy", "ne")
+    get_workbench().add_view(EasyExercisesView, "Lahendus", "ne")
