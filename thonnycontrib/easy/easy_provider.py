@@ -52,9 +52,12 @@ class EasyExerciseProvider(ExerciseProvider):
             logging.info('Authentication started')
             while self.easy.is_auth_in_progress(10):
                 logging.info('Authentication still not done...')
-                self.easy.start_auth_in_browser()
 
-            logging.info('Authenticated!')
+            if self.easy.is_auth_required():
+                logging.info('Authentication failed!')
+            else:
+                logging.info('Authenticated!')
+
         return self.get_html_and_breadcrumbs(next_url, form_data)
 
     def handle_submit_solution(self, form_data, url):
