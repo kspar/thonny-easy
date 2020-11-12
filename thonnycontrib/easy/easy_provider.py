@@ -8,13 +8,15 @@ from .templates import *
 from .templates import generate_course_list_html
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
-HOME_LINK = ("/", "Lahendus")
-
 
 class EasyExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
         self.exercises_view = exercises_view
-        self.easy = Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', "lahendus.ut.ee")
+        self.url = "lahendus.ut.ee"
+        self.easy = Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', self.url)
+
+        # self.url = "dev.lahendus.ut.ee"
+        # self.easy = Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', self.url)
         logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s : %(message)s', level=logging.DEBUG)
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
@@ -38,10 +40,10 @@ class EasyExerciseProvider(ExerciseProvider):
                 return self.show_course_list()
 
         except AuthRequiredException:
-            return generate_login_html(url), [HOME_LINK]
+            return generate_login_html(url), [self._breadcrumb_courses()]
 
         except Exception as e:
-            return generate_error_html(e), [HOME_LINK]
+            return generate_error_html(e), [self._breadcrumb_courses()]
 
     def handle_auth(self, form_data):
         form_url = form_data.get("from")
@@ -67,7 +69,7 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def show_course_list(self):
         courses = self.easy.student.get_courses().courses
-        result = generate_course_list_html(courses), [HOME_LINK, self._breadcrumb_courses()]
+        result = generate_course_list_html(courses), [self._breadcrumb_courses()]
         return result
 
     def show_exercise_description(self, url):
@@ -81,14 +83,14 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def _get_course_list(self) -> Tuple[str, List[Tuple[str, str]]]:
         courses = self.easy.student.get_courses().courses
-        return generate_course_list_html(courses), [HOME_LINK, self._breadcrumb_courses()]
+        return generate_course_list_html(courses), [self._breadcrumb_courses()]
 
     def _get_ex_list(self, course_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         exercises = self.easy.student.get_course_exercises(course_id).exercises
         breadcrumb_ex_list = self._breadcrumb_exercises(course_id)
         html = generate_exercise_list_html(breadcrumb_ex_list[0], exercises)
 
-        return html, [HOME_LINK, self._breadcrumb_courses(), breadcrumb_ex_list]
+        return html, [self._breadcrumb_courses(), breadcrumb_ex_list]
 
     def _get_ex_description(self, course_id: str, exercise_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         details = self.easy.student.get_exercise_details(course_id, exercise_id)
@@ -96,9 +98,11 @@ class EasyExerciseProvider(ExerciseProvider):
         submit_html = generate_submit_html(course_id, exercise_id)
 
         breadcrumb_this = (f"/student/courses/{course_id}/exercises/{exercise_id}", details.effective_title)
-        breadcrumbs = [HOME_LINK, self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
+        breadcrumbs = [self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
 
-        return f"<h1>{details.effective_title}</h1>{details.text_html}{last_submission_html}{submit_html}", breadcrumbs
+        link = f"<a href=\"{self.url}/courses/{course_id}/exercises/{exercise_id}/summary\">⛬</a>"
+
+        return f"<h1>{details.effective_title} {link}</h1>{details.text_html}{last_submission_html}{submit_html}", breadcrumbs
 
     def _submit_solution(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
         self.easy.student.post_submission(course_id, exercise_id, form_data.get(EDITOR_CONTENT_NAME))

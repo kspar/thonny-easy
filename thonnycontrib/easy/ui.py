@@ -11,6 +11,7 @@ from .htmltext import FormData, HtmlText, HtmlRenderer
 
 EDITOR_CONTENT_NAME = "$EDITOR_CONTENT"
 
+
 class ExercisesView(ttk.Frame):
     def __init__(self, master, exercise_provider_class):
         self._destroyed = False
@@ -18,7 +19,7 @@ class ExercisesView(ttk.Frame):
 
         self._provider = exercise_provider_class(self)
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=self._provider.get_max_threads())
-        self._page_future = None # type: Optional[concurrent.futures.Future]
+        self._page_future = None  # type: Optional[concurrent.futures.Future]
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
@@ -122,7 +123,7 @@ class ExercisesView(ttk.Frame):
 
         self._page_future = self._executor.submit(
             self._provider.get_html_and_breadcrumbs, url, form_data)
-        self._set_page_html("<p>Please wait...</p>")
+        self._set_page_html("<p>Palun oota...</p>")
 
     def _set_page_html(self, html):
         self._html_widget.set_html_content(html)
@@ -228,9 +229,7 @@ class ExerciseHtmlRenderer(HtmlRenderer):
         if attrs["type"] == "hidden" and attrs["name"] == EDITOR_CONTENT_NAME:
             value = get_workbench().get_editor_notebook().get_current_editor_content()
             if value is None:
-                messagebox.showerror(
-                    "Can't submit", "No active editor. Nothing to submit.", master=self
-                )
+                messagebox.showerror("Ei saa esitada", "Puudub aktiivne redaktor. Ei ole midagi esitada.", master=self)
                 return False
             else:
                 return value
