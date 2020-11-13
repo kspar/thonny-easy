@@ -154,7 +154,6 @@ class ExercisesView(ttk.Frame):
         self._html_widget.set_html_content(html)
 
     def _make_tk_image(self, data):
-        print("Making", data)
         try:
             from PIL import Image
             from PIL.ImageTk import PhotoImage

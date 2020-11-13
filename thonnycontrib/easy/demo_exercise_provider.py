@@ -153,7 +153,6 @@ class DemoExerciseProvider(ExerciseProvider):
         )
 
     def get_image(self, url):
-        print("Getting", url)
         from urllib.request import urlopen
         with urlopen(url) as fp:
             return fp.read()
