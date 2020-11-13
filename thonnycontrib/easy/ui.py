@@ -1,6 +1,7 @@
 import concurrent.futures
 import tkinter as tk
 import traceback
+from io import BytesIO
 from tkinter import ttk, messagebox
 from typing import Tuple, List, Optional
 
@@ -11,6 +12,7 @@ from .htmltext import FormData, HtmlText, HtmlRenderer
 
 EDITOR_CONTENT_NAME = "$EDITOR_CONTENT"
 
+_images_by_urls = {}
 
 class ExercisesView(ttk.Frame):
     def __init__(self, master, exercise_provider_class):
@@ -20,6 +22,7 @@ class ExercisesView(ttk.Frame):
         self._provider = exercise_provider_class(self)
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=self._provider.get_max_threads())
         self._page_future = None  # type: Optional[concurrent.futures.Future]
+        self._image_futures = {}
 
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
@@ -39,6 +42,7 @@ class ExercisesView(ttk.Frame):
             master=self,
             renderer_class=ExerciseHtmlRenderer,
             link_and_form_handler=self._on_request_new_page,
+            image_requester=self._on_request_image,
             read_only=True,
             wrap="word",
             font="TkDefaultFont",
@@ -80,6 +84,20 @@ class ExercisesView(ttk.Frame):
 
             self._page_future = None
 
+        remaining_img_futures = {}
+        for url, fut in self._image_futures.items():
+            if fut.done():
+                try:
+                    data = fut.result()
+                except:
+                    traceback.print_exc()
+                else:
+                    self._update_image(url, fut.result())
+
+            else:
+                remaining_img_futures[url] = fut
+        self._image_futures = remaining_img_futures
+
         self._poll_scheduler = self.after(200, self._poll_provider_responses)
 
     def init_header(self, row, column):
@@ -104,6 +122,13 @@ class ExercisesView(ttk.Frame):
         else:
             get_workbench().open_url(target)
 
+    def _on_request_image(self, url):
+        assert url is not None
+
+        if url not in self._image_futures:
+            self._image_futures[url] = self._executor.submit(self._provider.get_image, url)
+
+
     def post_button_menu(self):
         """
         self.refresh_menu(context="button")
@@ -127,6 +152,29 @@ class ExercisesView(ttk.Frame):
 
     def _set_page_html(self, html):
         self._html_widget.set_html_content(html)
+
+    def _make_tk_image(self, data):
+        print("Making", data)
+        try:
+            from PIL import Image
+            from PIL.ImageTk import PhotoImage
+            with BytesIO(data) as fp:
+                fp.seek(0)
+                pil_img = Image.open(fp)
+                return PhotoImage(pil_img)
+
+        except ImportError:
+            return tk.PhotoImage(data=data)
+
+    def _update_image(self, url, data):
+        try:
+            tk_img = self._make_tk_image(data)
+        except:
+            traceback.print_exc()
+            return
+
+        _images_by_urls[url] = tk_img
+        self._html_widget.update_image(url, tk_img)
 
     def destroy(self):
         if self._poll_scheduler is not None:
@@ -237,7 +285,15 @@ class ExerciseHtmlRenderer(HtmlRenderer):
             return super(ExerciseHtmlRenderer, self)._expand_field_value(value_holder, attrs)
 
     def _get_image(self, name):
-        return get_workbench().get_image(name)
+        # Previously seen images can be given synchronously
+        if name in _images_by_urls:
+            return _images_by_urls[name]
+
+        if self._image_requester is not None:
+            # others should be requeste asynchronously
+            self._image_requester(name)
+
+        return None
 
 
 class ExerciseProvider:

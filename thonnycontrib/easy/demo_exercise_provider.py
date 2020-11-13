@@ -11,7 +11,7 @@ class DemoExerciseProvider(ExerciseProvider):
     def get_html_and_breadcrumbs(
             self, url: str, form_data: FormData
     ) -> Tuple[str, List[Tuple[str, str]]]:
-        time.sleep(2)
+        time.sleep(1)
         #raise RuntimeError("Not right")
         if url == "/ex1":
             return (self._get_ex_text(1), [("/", "Home"), ("/ex1", "Ülesanne 1")])
@@ -22,7 +22,7 @@ class DemoExerciseProvider(ExerciseProvider):
         elif url == "/ex2/submit":
             return (self._get_submit_text(form_data), [("/", "Home"), ("/ex1", "Ülesanne 1")])
         else:
-            return (self._get_benchmark_page(), [("/", "Home")])
+            return (self._get_benchmark_page2(), [("/", "Home")])
 
     def _get_ex_list(self):
         return """
@@ -32,7 +32,7 @@ class DemoExerciseProvider(ExerciseProvider):
             </ul>
         """
 
-    def _get_benchmark_page(self):
+    def _get_benchmark_page1(self):
         return """
 <div class="paragraph"> 
  <p>Alates 2014. aastast on Eesti Lepidopteroloogide Selts igal aastal valinud aasta liblika. Tänavune aasta liblikas on <a href="https://et.wikipedia.org/wiki/Teelehe-mosaiikliblikas" target="_blank" rel="noopener noreferrer">teelehe-mosaiikliblikas</a>.</p> 
@@ -73,6 +73,49 @@ class DemoExerciseProvider(ExerciseProvider):
 </div>        
         """
 
+    def _get_benchmark_page2(self):
+        return """
+<div>
+    <p>2016. aastal registreeriti Eestis 1145 uut mootorratast. Registeeritud mootorrataste andmed on kuude kaupa failis
+        <code>mootorrattad.txt</code>, kus esimesel real on jaanuaris registreeritud tsiklite arv, teisel real
+        veebruaris registreeritud tsiklite arv jne. Faili võite salvestada <a href="https://courses.cs.ut.ee/MTAT.TK.012/2016_fall/uploads/Main/mootorrattad.txt">siit</a> või koostada ise mõne tekstiredaktoriga.
+    </p>
+    <p>Koostada programm, mis</p>
+    <ol>
+        <li>loeb failist registreeritud mootorrataste andmed kuude järgi järjendisse;
+            <ul class="browser-default">
+                <li>Failist järjendisse saab lugeda järgmise programmijupi abil:
+                    <br>
+                    <code>fail = open("mootorrattad.txt", encoding="UTF-8")</code>
+                    <br>
+                    <code>mootorrattad = []</code>
+                    <br>
+                    <code>for rida in fail:</code>
+                    <br>
+                    <code>&nbsp;&nbsp;&nbsp;&nbsp;mootorrattad.append(int(rida))</code>
+                    <br>
+                    <code>fail.close()</code>
+                </li>
+                Viide: <a href="https://web.htk.tlu.ee/digitaru/programmeerimine/chapter/andmed-failist/">Andmed
+                failist</a>
+            </ul>
+        </li>
+        <li>küsib kasutajalt täisarvu, mis tähistab ühe kuu järjekorranumbrit (jaanuar 1, veebruar 2 jne);</li>
+        <li>väljastab, mitu uut mootorratast sel kuul registreeriti.</li>
+    </ol>
+
+    <p>Näited programmi tööst:</p>
+    <img src="https://courses.cs.ut.ee/2017/eprogalkool/fall/uploads/Main/yl5.1.png"/>
+
+    <p>Kui olete juba hulk aega proovinud ülesannet iseseisvalt lahendada ja see ikka ei õnnestu, siis võib-olla saate
+        abi <a href="http://progtugi.cs.ut.ee/#/ts/58a1da8ff953770b0ab52569/">murelahendajalt</a>. Püütud on
+        tüüpilisemaid probleemseid kohti selgitada ja anda vihjeid.</p>
+
+    
+    <img src="https://_lh3.googleusercontent.com/proxy/JJ1t0Lmr0dA8EsWIOZgLHfhqH4lezdc-etNQQRDXt9vVyD-fwynb7r4Zku8mglBgA3wHJRA_vFzJkW56hhTlyzeNepDRZZMIUsskTKvfImaJ3DK8Qx_ybKgMbbEks_jNhxtxrJCfTC7lhlJhxpNFe2-ng-bgzjLydSk3ku626nsPZQ2LECoRp70J-w"/>
+
+</div>        """
+
     def _get_ex_text(self, num):
 
         return """
@@ -108,3 +151,9 @@ class DemoExerciseProvider(ExerciseProvider):
         """.format(
             source=source
         )
+
+    def get_image(self, url):
+        print("Getting", url)
+        from urllib.request import urlopen
+        with urlopen(url) as fp:
+            return fp.read()

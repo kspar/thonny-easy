@@ -17,6 +17,9 @@ setuptools.setup(
         'easy-py>=0.3.1',
         'thonny>=3.2.7'
     ],
+    package_data={
+        "thonnycontrib.easy": ["res/*.*"],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

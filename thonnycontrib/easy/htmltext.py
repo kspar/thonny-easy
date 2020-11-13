@@ -1,19 +1,22 @@
+import os.path
+
 import tkinter as tk
 import tkinter.font as tkfont
 from html.parser import HTMLParser
 from tkinter import ttk
 from typing import List, Tuple, Any
 
-from thonny import tktextext, ui_utils
+from thonny import tktextext, ui_utils, get_workbench
 from thonny.codeview import get_syntax_options_for_tag
 
 NBSP = "\u00A0"
 UL_LI_MARKER = "•" + NBSP
 VERTICAL_SPACER = NBSP + "\n"
 
+_image_placeholder = None
 
 class HtmlText(tktextext.TweakableText):
-    def __init__(self, master, renderer_class, link_and_form_handler, read_only=False, **kw):
+    def __init__(self, master, renderer_class, link_and_form_handler, image_requester, read_only=False, **kw):
 
         super().__init__(
             master=master,
@@ -26,6 +29,7 @@ class HtmlText(tktextext.TweakableText):
         )
         self._renderer_class = renderer_class
         self._link_and_form_handler = link_and_form_handler
+        self._image_requester = image_requester
         self._configure_tags()
         self._reset_renderer()
 
@@ -117,7 +121,7 @@ class HtmlText(tktextext.TweakableText):
         self.tag_raise("sel")
 
     def _reset_renderer(self):
-        self._renderer = self._renderer_class(self, self._link_and_form_handler)
+        self._renderer = self._renderer_class(self, self._link_and_form_handler, self._image_requester)
 
     def clear(self):
         self.direct_delete("1.0", "mark")
@@ -139,17 +143,21 @@ class HtmlText(tktextext.TweakableText):
     def _hyperlink_leave(self, event):
         self.config(cursor="")
 
+    def update_image(self, name, data):
+        self._renderer.update_image(name, data)
 
 class HtmlRenderer(HTMLParser):
-    def __init__(self, text_widget, link_and_form_handler):
+    def __init__(self, text_widget, link_and_form_handler, image_requester):
         super().__init__()
         self.widget = text_widget
 
         # inserting at "end" acts funny, so I'm creating a mark instead
         self.widget.direct_insert("end", "\n")
         self.widget.mark_set("mark", "1.0")
+        self._images_by_name = {}
 
         self._link_and_form_handler = link_and_form_handler
+        self._image_requester = image_requester
         self._unique_tag_count = 0
         self._context_tags = []
         self._active_lists = []
@@ -187,6 +195,9 @@ class HtmlRenderer(HTMLParser):
             elif self._active_lists[-1] == "ol":
                 # TODO:
                 self._append_text(UL_LI_MARKER)
+        elif tag == "img":
+            if "src" in attrs:
+                self._append_image(attrs["src"])
         elif tag == "form":
             form = attrs.copy()
             form["inputs"] = []
@@ -355,10 +366,29 @@ class HtmlRenderer(HTMLParser):
         self._append_window(cb)
 
     def _append_image(self, name, extra_tags=()):
+        assert name is not None
         index = self.widget.index("mark-1c")
-        self.widget.image_create(index, image=self._get_image(name))
+        img_data = self._get_image(name)
+        if img_data is None:
+            img_data = self._get_image_placeholder()
+
+        img = self.widget.image_create(index, image=img_data)
+        if name not in self._images_by_name:
+            self._images_by_name[name] = []
+        self._images_by_name[name].append(img)
+
         for tag in self._get_effective_tags(extra_tags):
             self.widget.tag_add(tag, index)
+
+    def _get_image_placeholder(self):
+        global _image_placeholder
+
+        if _image_placeholder is None:
+            res_path = os.path.join(os.path.dirname(__file__), "res", "broken.png")
+            with open(res_path, "rb") as fp:
+                _image_placeholder = tk.PhotoImage(data=fp.read())
+
+        return _image_placeholder
 
     def _get_image(self, name):
         raise NotImplementedError()
@@ -382,6 +412,10 @@ class HtmlRenderer(HTMLParser):
             tags.add("topic_title_code")
 
         return tuple(sorted(tags))
+
+    def update_image(self, name, tk_img):
+        for key in self._images_by_name.get(name, []):
+            self.widget.image_configure(key, image=tk_img)
 
 
 class FormData:
