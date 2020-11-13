@@ -179,6 +179,8 @@ class HtmlRenderer(HTMLParser):
             self._active_lists.append("ul")
         elif tag == "ol":
             self._active_lists.append("ol")
+        elif tag == "br":
+            self._append_text("\n")
         elif tag == "li":
             if self._active_lists[-1] == "ul":
                 self._append_text(UL_LI_MARKER)
