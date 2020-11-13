@@ -1,6 +1,9 @@
 import time
-from typing import Tuple, List
+import tkinter
+from tkinter import messagebox
+from typing import Tuple, List, Union, Callable
 
+from thonny import get_workbench
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
 
@@ -21,6 +24,8 @@ class DemoExerciseProvider(ExerciseProvider):
             return (self._get_submit_text(form_data), [("/", "Home"), ("/ex1", "Ülesanne 1")])
         elif url == "/ex2/submit":
             return (self._get_submit_text(form_data), [("/", "Home"), ("/ex1", "Ülesanne 1")])
+        elif url == "/logout":
+            return ("<p>Bye!</p>", [("/", "Home")])
         else:
             return (self._get_benchmark_page2(), [("/", "Home")])
 
@@ -156,3 +161,13 @@ class DemoExerciseProvider(ExerciseProvider):
         from urllib.request import urlopen
         with urlopen(url) as fp:
             return fp.read()
+
+    def get_menu_items(self) -> List[Tuple[str, Union[str, Callable, None]]]:
+        return [
+            ("Logout", "/logout"),
+            ("-", None), # Separator
+            ("UI command", self.show_dlg)
+        ]
+
+    def show_dlg(self):
+        messagebox.showinfo("Yeehaa", "Hi!", parent=get_workbench())

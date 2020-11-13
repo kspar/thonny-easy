@@ -3,7 +3,7 @@ import tkinter as tk
 import traceback
 from io import BytesIO
 from tkinter import ttk, messagebox
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Callable, Union
 
 from thonny import tktextext, get_workbench
 from thonny.ui_utils import scrollbar_style, lookup_style_option
@@ -113,6 +113,7 @@ class ExercisesView(ttk.Frame):
         self.menu_button = ttk.Button(
             header_frame, text=" ≡ ", style="ViewToolbar.Toolbutton", command=self.post_button_menu
         )
+        self._button_menu = tk.Menu(header_frame, tearoff=False)
         # self.menu_button.grid(row=0, column=1, sticky="ne")
         self.menu_button.place(anchor="ne", rely=0, relx=1)
 
@@ -130,13 +131,28 @@ class ExercisesView(ttk.Frame):
 
 
     def post_button_menu(self):
-        """
-        self.refresh_menu(context="button")
-        self.menu.tk_popup(
+        self._button_menu.delete(0, "end")
+
+        items = self._provider.get_menu_items()
+        if not items:
+            return
+
+        for label, handler in items:
+            if label == "-":
+                self._button_menu.add_separator()
+            else:
+                if isinstance(handler, str):
+                    def command(url=handler):
+                        self.go_to(url)
+                else:
+                    command = handler
+
+                self._button_menu.add_command(label=label, command=command)
+
+        self._button_menu.tk_popup(
             self.menu_button.winfo_rootx(),
             self.menu_button.winfo_rooty() + self.menu_button.winfo_height(),
         )
-        """
 
     def go_to(self, url, form_data=None):
         if form_data is None:
@@ -299,8 +315,20 @@ class ExerciseProvider:
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         raise NotImplementedError()
 
-    def get_image(self, url):
+    def get_image(self, url) -> bytes:
         raise NotImplementedError()
 
-    def get_max_threads(self):
+    def get_max_threads(self) -> int:
         return 10
+
+    def get_menu_items(self) -> List[Tuple[str, Union[str, Callable, None]]]:
+        """
+        This will be called each time the user clicks on the menu button.
+
+        First item in each pair is Text of the menu item ("-" if you want to create a separator)
+        Second item:
+            str is interpreted as a provider url, fetched in a thread (just like clicking on a link)
+            None means the item is not available at this moment
+            a callable is executed in UI thread (without arguments)
+        """
+        return []
