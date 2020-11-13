@@ -18,11 +18,16 @@ _image_placeholder = None
 class HtmlText(tktextext.TweakableText):
     def __init__(self, master, renderer_class, link_and_form_handler, image_requester, read_only=False, **kw):
 
+        text_options = get_syntax_options_for_tag("TEXT")
+
+
         super().__init__(
             master=master,
             read_only=read_only,
             **{
                 "font": "TkDefaultFont",
+                "background": text_options["background"],
+                "foreground": text_options["foreground"],
                 # "cursor" : "",
                 **kw,
             }
@@ -76,7 +81,6 @@ class HtmlText(tktextext.TweakableText):
         self.tag_configure("em", font=italic_font)
         self.tag_configure("strong", font=bold_font)
 
-        # TODO: hyperlink syntax options may require different background as well
         self.tag_configure(
             "a",
             **{**get_syntax_options_for_tag("hyperlink"), "underline": False},
@@ -89,20 +93,22 @@ class HtmlText(tktextext.TweakableText):
         self.tag_bind("a", "<Enter>", self._hyperlink_enter)
         self.tag_bind("a", "<Leave>", self._hyperlink_leave)
 
+
+        gutter_options = get_syntax_options_for_tag("GUTTER")
         self.tag_configure(
             "code",
             font=fixed_font,
             # wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
-            background="#eeeeee",
-            lmargincolor="white"
+            background=gutter_options["background"],
+            lmargincolor=self["background"]
         )
         self.tag_configure(
             "pre",
             font=fixed_font,
             wrap="none",  # TODO: needs automatic hor-scrollbar and better padding mgmt
-            background="#eeeeee",
-            rmargincolor="#eeeeee",
-            lmargincolor="white"
+            background=gutter_options["background"],
+            rmargincolor=gutter_options["background"],
+            lmargincolor=self["background"]
         )
         # if ui_utils.get_tk_version_info() >= (8,6,6):
         #    self.tag_configure("code", lmargincolor=self["background"])

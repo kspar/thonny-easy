@@ -112,7 +112,7 @@ class DemoExerciseProvider(ExerciseProvider):
         tüüpilisemaid probleemseid kohti selgitada ja anda vihjeid.</p>
 
     
-    <img src="https://_lh3.googleusercontent.com/proxy/JJ1t0Lmr0dA8EsWIOZgLHfhqH4lezdc-etNQQRDXt9vVyD-fwynb7r4Zku8mglBgA3wHJRA_vFzJkW56hhTlyzeNepDRZZMIUsskTKvfImaJ3DK8Qx_ybKgMbbEks_jNhxtxrJCfTC7lhlJhxpNFe2-ng-bgzjLydSk3ku626nsPZQ2LECoRp70J-w"/>
+    <img src="https://lh3.googleusercontent.com/proxy/JJ1t0Lmr0dA8EsWIOZgLHfhqH4lezdc-etNQQRDXt9vVyD-fwynb7r4Zku8mglBgA3wHJRA_vFzJkW56hhTlyzeNepDRZZMIUsskTKvfImaJ3DK8Qx_ybKgMbbEks_jNhxtxrJCfTC7lhlJhxpNFe2-ng-bgzjLydSk3ku626nsPZQ2LECoRp70J-w"/>
 
 </div>        """
 
