@@ -4,6 +4,7 @@ import traceback
 from io import BytesIO
 from tkinter import ttk, messagebox
 from typing import Tuple, List, Optional, Callable, Union
+from urllib.request import urlopen
 
 from thonny import tktextext, get_workbench
 from thonny.ui_utils import scrollbar_style, lookup_style_option
@@ -13,6 +14,7 @@ from .htmltext import FormData, HtmlText, HtmlRenderer
 EDITOR_CONTENT_NAME = "$EDITOR_CONTENT"
 
 _images_by_urls = {}
+
 
 class ExercisesView(ttk.Frame):
     def __init__(self, master, exercise_provider_class):
@@ -129,7 +131,6 @@ class ExercisesView(ttk.Frame):
         if url not in self._image_futures:
             self._image_futures[url] = self._executor.submit(self._provider.get_image, url)
 
-
     def post_button_menu(self):
         self._button_menu.delete(0, "end")
 
@@ -176,7 +177,12 @@ class ExercisesView(ttk.Frame):
             with BytesIO(data) as fp:
                 fp.seek(0)
                 pil_img = Image.open(fp)
-                return PhotoImage(pil_img)
+
+                # Resize while keeping the aspect ratio
+                basewidth = 250
+                wpercent = (basewidth / float(pil_img.size[0]))
+                hsize = int((float(pil_img.size[1]) * float(wpercent)))
+                return PhotoImage(pil_img.resize((basewidth, hsize), Image.ANTIALIAS))
 
         except ImportError:
             return tk.PhotoImage(data=data)
@@ -305,7 +311,7 @@ class ExerciseHtmlRenderer(HtmlRenderer):
             return _images_by_urls[name]
 
         if self._image_requester is not None:
-            # others should be requeste asynchronously
+            # others should be requested asynchronously
             self._image_requester(name)
 
         return None
@@ -316,7 +322,7 @@ class ExerciseProvider:
         raise NotImplementedError()
 
     def get_image(self, url) -> bytes:
-        raise NotImplementedError()
+        return urlopen(url).read()
 
     def get_max_threads(self) -> int:
         return 10

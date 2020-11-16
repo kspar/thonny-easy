@@ -55,28 +55,32 @@ def generate_latest_submissions_html(provider, course_id, exercise_id) -> str:
         teacher_feedback = ""
     else:
         teacher_feedback = f"""
-            <h2>Õpetaja hinnang</h2>       
+            <h2>Õpetaja hinnang</h2>
+            <br>
 
-            <div>{latest.feedback_teacher} </div> 
+            <div>{latest.feedback_teacher} </div>
+            <br>
 
-            <div>Hinne: {latest.grade_teacher}/100</div> 
+            <div>Hinne: {latest.grade_teacher}/100</div>
+            <br>
             """
 
     return f"""
-                <h1>Esitamine</h1>
+           <h1>Esitamine</h1>
 
-                <h2>Automaatne hinnang</h2>
+           <h2>Automaatne hinnang</h2>
 
-                <div>Automaatne hinne: {latest.grade_auto}/100</div> 
+           <div>Automaatne hinne: {latest.grade_auto}/100</div> 
+           <br>
+           <code>{latest.feedback_auto}</code>
+           <br>
+           <br>
 
-                <div>
-                    <code>{latest.feedback_auto}</code>
-                </div> 
+           <div>{teacher_feedback}</div> 
+           <br>
+           <br>
 
-                <div>{teacher_feedback}</div> 
-
-                <h2>Viimane esitus</h2>
-                <div>
-                    <code>{latest.solution}</code>
-                </div> 
+           <h2>Viimane esitus</h2>
+           <br>
+           <code>{latest.solution}</code>
         """
