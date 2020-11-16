@@ -1,0 +1,32 @@
+<h1>{{effective_title}} <a href="{{{provider_url}}}/courses/{{course_id}}/exercises/{{exercise_id}}/summary">⛬</a></h1>
+
+{{{text_html}}}
+
+<h1>Esitamine</h1>
+
+<h2>Automaatne hinnang</h2>
+
+<div>Automaatne hinne: {{grade_auto}}/100</div>
+<br/>
+<code>{{feedback_auto}}</code>
+<br/>
+
+<h2>Õpetaja hinnang</h2>
+<br/>
+
+<div>{{latest_feedback_teacher}}</div>
+<br/>
+
+<div>Hinne: {{latest_grade_teacher}}/100</div>
+<br/>
+
+
+<h2>Viimane esitus</h2>
+<br/>
+<code>{{solution}}</code>
+<br/>
+
+<form action="/student/courses/{{course_id}}/exercises/{{exercise_id}}/submissions">
+    <input type="hidden" name="{{EDITOR_CONTENT_NAME}}"/>
+    <input type="submit" value="Esita aktiivse redaktori sisu"/>
+</form>

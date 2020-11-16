@@ -4,8 +4,7 @@ from typing import Tuple, List
 
 from easy import Ez, AuthRequiredException
 
-from .templates import *
-from .templates import generate_course_list_html
+from .templates_generator import *
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
 
@@ -94,15 +93,9 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def _get_ex_description(self, course_id: str, exercise_id: str) -> Tuple[str, List[Tuple[str, str]]]:
         details = self.easy.student.get_exercise_details(course_id, exercise_id)
-        last_submission_html = generate_latest_submissions_html(self, course_id, exercise_id)
-        submit_html = generate_submit_html(course_id, exercise_id)
-
         breadcrumb_this = (f"/student/courses/{course_id}/exercises/{exercise_id}", details.effective_title)
         breadcrumbs = [self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
-
-        link = f"<a href=\"{self.url}/courses/{course_id}/exercises/{exercise_id}/summary\">⛬</a>"
-
-        return f"<h1>{details.effective_title} {link}</h1>{details.text_html}{last_submission_html}{submit_html}", breadcrumbs
+        return generate_exercise_html(self, course_id, exercise_id), breadcrumbs
 
     def _submit_solution(self, course_id: str, exercise_id: str, form_data) -> Tuple[str, List[Tuple[str, str]]]:
         self.easy.student.post_submission(course_id, exercise_id, form_data.get(EDITOR_CONTENT_NAME))
