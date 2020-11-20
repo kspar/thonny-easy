@@ -44,7 +44,6 @@ def generate_exercise_html(provider, course_id, exercise_id) -> str:
         latest = SubmissionResp()
 
     details = provider.easy.student.get_exercise_details(course_id, exercise_id)
-
     return render("exercise.mustache", {"effective_title": details.effective_title,
                                         "text_html": details.text_html,
                                         "grade_auto": latest.grade_auto,
@@ -55,4 +54,4 @@ def generate_exercise_html(provider, course_id, exercise_id) -> str:
                                         "exercise_id": exercise_id,
                                         "latest_feedback_teacher": latest.feedback_teacher,
                                         "latest_grade_teacher": latest.grade_teacher,
-                                        "provider_url": provider.url})
+                                        "provider_url": provider.easy.util.idp_client_name})

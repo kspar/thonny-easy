@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Tuple, List
+from typing import Tuple, List, Union, Callable
 
 from easy import Ez, AuthRequiredException
 
@@ -8,14 +8,15 @@ from .templates_generator import *
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
 
+def _get_easy():
+    return Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', "lahendus.ut.ee")
+    # return Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
+
+
 class EasyExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
         self.exercises_view = exercises_view
-        self.url = "lahendus.ut.ee"
-        self.easy = Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', self.url)
-
-        # self.url = "dev.lahendus.ut.ee"
-        # self.easy = Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', self.url)
+        self.easy = _get_easy()
         logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s : %(message)s', level=logging.DEBUG)
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
@@ -31,6 +32,12 @@ class EasyExerciseProvider(ExerciseProvider):
 
             elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url)):
                 return self.handle_submit_solution(form_data, url)
+
+            elif url == "/logout":
+                self.easy.logout_in_browser()
+                self.easy.shutdown()
+                self.easy = _get_easy()
+                return "<p>Nägemist!</p>", [("/", "Home")]
 
             elif url == "/auth":
                 return self.handle_auth(form_data)
@@ -110,3 +117,6 @@ class EasyExerciseProvider(ExerciseProvider):
     @staticmethod
     def _breadcrumb_courses() -> Tuple[str, str]:
         return f"/student/courses/", "Kursused"
+
+    def get_menu_items(self) -> List[Tuple[str, Union[str, Callable, None]]]:
+        return [("Logi sisse", "/auth") if self.easy.is_auth_required() else ("Logi välja", "/logout")]
