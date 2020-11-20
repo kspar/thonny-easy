@@ -65,6 +65,8 @@ class EasyExerciseProvider(ExerciseProvider):
                 logging.info('Authentication failed!')
             else:
                 logging.info('Authenticated!')
+                logging.info('Checking in...')
+                self.easy.check_in()
 
         return self.get_html_and_breadcrumbs(next_url, form_data)
 
