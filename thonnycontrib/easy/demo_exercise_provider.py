@@ -111,15 +111,29 @@ class DemoExerciseProvider(ExerciseProvider):
 
     <p>Näited programmi tööst:</p>
     <img src="https://courses.cs.ut.ee/2017/eprogalkool/fall/uploads/Main/yl5.1.png"/>
-
-    <p>Kui olete juba hulk aega proovinud ülesannet iseseisvalt lahendada ja see ikka ei õnnestu, siis võib-olla saate
+    
+    <p>Kui olete juba hulk aega<br/>proovinud ülesannet iseseisvalt lahendada ja see ikka ei õnnestu, siis võib-olla saate
         abi <a href="http://progtugi.cs.ut.ee/#/ts/58a1da8ff953770b0ab52569/">murelahendajalt</a>. Püütud on
         tüüpilisemaid probleemseid kohti selgitada ja anda vihjeid.</p>
 
     
     <img src="https://lh3.googleusercontent.com/proxy/JJ1t0Lmr0dA8EsWIOZgLHfhqH4lezdc-etNQQRDXt9vVyD-fwynb7r4Zku8mglBgA3wHJRA_vFzJkW56hhTlyzeNepDRZZMIUsskTKvfImaJ3DK8Qx_ybKgMbbEks_jNhxtxrJCfTC7lhlJhxpNFe2-ng-bgzjLydSk3ku626nsPZQ2LECoRp70J-w"/>
 
-</div>        """
+</div>       
+
+<h2>Viimane esitus</h2>
+<br/>
+<code>
+>>> asdfasdf
+123
+</code>
+<br/>
+
+<form action="/student/courses/{{course_id}}/exercises/{{exercise_id}}/submissions">
+    <input type="hidden" name="{{EDITOR_CONTENT_NAME}}"/>
+    <input type="submit" value="Esita aktiivse redaktori sisu"/>
+</form> 
+ """
 
     def _get_ex_text(self, num):
 
