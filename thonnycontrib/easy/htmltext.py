@@ -167,6 +167,7 @@ class HtmlRenderer(HTMLParser):
         self._unique_tag_count = 0
         self._context_tags = []
         self._active_lists = []
+        self._active_ol_item_counts = []
         self._active_forms = []
         self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "form", "h1", "h2", "summary", "details"]
         self._alternatives = {"b": "strong", "i": "em"}
@@ -193,14 +194,15 @@ class HtmlRenderer(HTMLParser):
             self._active_lists.append("ul")
         elif tag == "ol":
             self._active_lists.append("ol")
+            self._active_ol_item_counts.append(0)
         elif tag == "br":
             self._append_text(NBSP + "\n")
         elif tag == "li":
             if self._active_lists[-1] == "ul":
                 self._append_text(UL_LI_MARKER)
             elif self._active_lists[-1] == "ol":
-                # TODO:
-                self._append_text(UL_LI_MARKER)
+                self._active_ol_item_counts[-1] += 1
+                self._append_text("%d.%s" % (self._active_ol_item_counts[-1], NBSP))
         elif tag == "img":
             if "src" in attrs:
                 self._append_image(attrs["src"])
@@ -230,6 +232,7 @@ class HtmlRenderer(HTMLParser):
             self._close_active_list("ul")
         elif tag == "ol":
             self._close_active_list("ol")
+            self._active_ol_item_counts.pop()
         elif tag == "form":
             self._active_forms.pop()
 
