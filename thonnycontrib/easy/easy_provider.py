@@ -37,6 +37,8 @@ class EasyExerciseProvider(ExerciseProvider):
             return self.show_course_list()
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
+        home = [("/", "Lahendus")]
+
         try:
             if url == "/auth":
                 if self.easy.is_auth_required():
@@ -50,7 +52,7 @@ class EasyExerciseProvider(ExerciseProvider):
                             self.easy.shutdown()
 
                     if self.easy.is_auth_required():
-                        return generate_error_auth(), [("/", "Lahendus")]
+                        return generate_error_auth(), home
                     else:
                         logging.info('Authenticated! Checking in...')
                         self.easy.check_in()
@@ -63,7 +65,7 @@ class EasyExerciseProvider(ExerciseProvider):
                 self.easy.logout_in_browser()
                 self.easy.shutdown()
                 self.easy = _get_easy()
-                return "<p>Nägemist!</p>", [("/", "Lahendus")]
+                return "<p>Nägemist!</p>", home
             else:
                 return self._handle_ui_request(url, form_data)
 
@@ -71,9 +73,9 @@ class EasyExerciseProvider(ExerciseProvider):
             # Allow only one instance of the auth server in all cases.
             if self.easy.is_auth_in_progress(0):
                 self.easy.shutdown()
-                return generate_error_auth(), [("/", "Lahendus")]
+                return generate_error_auth(), home
 
-            return generate_login_html(url), [("/", "Lahendus")]
+            return generate_login_html(url), home
 
         except Exception as e:
             return generate_error_html(e), [self._breadcrumb_courses()]
