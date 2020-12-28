@@ -34,6 +34,10 @@ def generate_error_html(error_msg) -> str:
     return f"<h1>Viga!</h1><div>{error_msg}</div>"
 
 
+def generate_error_auth() -> str:
+    return f"""<h1>Autentimine ebaõnnestus!</h1><a href="/auth">Alusta autentimist uuesti</a>"""
+
+
 def generate_exercise_html(provider, course_id, exercise_id) -> str:
     def has_submissions() -> bool:
         return len(provider.easy.student.get_all_submissions(course_id, exercise_id).submissions) > 0

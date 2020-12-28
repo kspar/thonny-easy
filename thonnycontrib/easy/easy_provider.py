@@ -13,62 +13,70 @@ def _get_easy():
     # return Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
 
 
+# noinspection DuplicatedCode
 class EasyExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
         self.exercises_view = exercises_view
         self.easy = _get_easy()
         logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s : %(message)s', level=logging.DEBUG)
 
+    # Needed as separate function to avoid recursive call in auth handling
+    def _handle_ui_request(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
+        if bool(re.match(r"^/student/courses/[0-9]+/exercises/$", url)):
+            return self.show_exercise_list(url)
+
+        elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+$", url)):
+            return self.show_exercise_description(url)
+
+        elif bool(re.match(r"^/student/courses$", url)) or url == "/":
+            return self.show_course_list()
+
+        elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url)):
+            return self.handle_submit_solution(form_data, url)
+        else:
+            return self.show_course_list()
+
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         try:
-            if bool(re.match(r"^/student/courses/[0-9]+/exercises/$", url)):
-                return self.show_exercise_list(url)
+            if url == "/auth":
+                if self.easy.is_auth_required():
+                    self.easy.start_auth_in_browser()
 
-            elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+$", url)):
-                return self.show_exercise_description(url)
+                    retries, allowed_retries = 0, 6
+                    while self.easy.is_auth_in_progress(10):
+                        retries += 1
+                        logging.info(f'Authentication still not done... Attempt {retries}/{allowed_retries}.')
+                        if retries == allowed_retries:
+                            self.easy.shutdown()
 
-            elif bool(re.match(r"^/student/courses$", url)) or url == "/":
-                return self.show_course_list()
+                    if self.easy.is_auth_required():
+                        return generate_error_auth(), [("/", "Lahendus")]
+                    else:
+                        logging.info('Authenticated! Checking in...')
+                        self.easy.check_in()
 
-            elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url)):
-                return self.handle_submit_solution(form_data, url)
+                form_url = form_data.get("from")
+                next_url = "/" if form_url is None else form_url
+                return self._handle_ui_request(next_url, form_data)
 
             elif url == "/logout":
                 self.easy.logout_in_browser()
                 self.easy.shutdown()
                 self.easy = _get_easy()
-                return "<p>Nägemist!</p>", [("/", "Home")]
-
-            elif url == "/auth":
-                return self.handle_auth(form_data)
-
+                return "<p>Nägemist!</p>", [("/", "Lahendus")]
             else:
-                return self.show_course_list()
+                return self._handle_ui_request(url, form_data)
 
         except AuthRequiredException:
-            return generate_login_html(url), [self._breadcrumb_courses()]
+            # Allow only one instance of the auth server in all cases.
+            if self.easy.is_auth_in_progress(0):
+                self.easy.shutdown()
+                return generate_error_auth(), [("/", "Lahendus")]
+
+            return generate_login_html(url), [("/", "Lahendus")]
 
         except Exception as e:
             return generate_error_html(e), [self._breadcrumb_courses()]
-
-    def handle_auth(self, form_data):
-        form_url = form_data.get("from")
-        next_url = "/" if form_url is None else form_url
-        if self.easy.is_auth_required():
-            logging.info('Authentication required')
-            self.easy.start_auth_in_browser()
-            logging.info('Authentication started')
-            while self.easy.is_auth_in_progress(10):
-                logging.info('Authentication still not done...')
-
-            if self.easy.is_auth_required():
-                logging.info('Authentication failed!')
-            else:
-                logging.info('Authenticated!')
-                logging.info('Checking in...')
-                self.easy.check_in()
-
-        return self.get_html_and_breadcrumbs(next_url, form_data)
 
     def handle_submit_solution(self, form_data, url):
         course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
