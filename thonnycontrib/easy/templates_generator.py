@@ -16,14 +16,18 @@ def render(template_name: str, data: Dict) -> str:
 
 def generate_exercise_list_html(base_url, exercises):
     ex_list = [f'<li><a href="{base_url}{e["id"]}">{e["effective_title"]}</a></li>' for e in exercises]
-    html = f"<ul>{''.join(ex_list)}</ul>"
-    return html
+    if len(ex_list) == 0:
+        return "<div>Siia kursusele ei ole veel ülesandeid lisatud.</div>"
+    else:
+        return f"<ul>{''.join(ex_list)}</ul>"
 
 
 def generate_course_list_html(courses):
-    format_c = [f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"]}</a></li>' for c in courses]
-    html = f"<ul>{''.join(format_c)}</ul>"
-    return html
+    course_lst = [f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"]}</a></li>' for c in courses]
+    if len(course_lst) == 0:
+        return "<div>Sind ei ole veel ühelegi kursusele lisatud.</div>"
+    else:
+        return f"<ul>{''.join(course_lst)}</ul>"
 
 
 def generate_login_html(from_url) -> str:
