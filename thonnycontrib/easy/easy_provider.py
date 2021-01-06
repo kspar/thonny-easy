@@ -33,6 +33,7 @@ class EasyExerciseProvider(ExerciseProvider):
 
         elif re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url):
             return self.handle_submit_solution(form_data, url)
+
         else:
             return self.show_course_list()
 
