@@ -22,16 +22,16 @@ class EasyExerciseProvider(ExerciseProvider):
 
     # Needed as separate function to avoid recursive call in auth handling
     def _handle_ui_request(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
-        if bool(re.match(r"^/student/courses/[0-9]+/exercises/$", url)):
+        if re.match(r"^/student/courses/[0-9]+/exercises/$", url):
             return self.show_exercise_list(url)
 
-        elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+$", url)):
+        elif re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+$", url):
             return self.show_exercise_description(url)
 
-        elif bool(re.match(r"^/student/courses$", url)) or url == "/":
+        elif re.match(r"^/student/courses$", url) or url == "/":
             return self.show_course_list()
 
-        elif bool(re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url)):
+        elif re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url):
             return self.handle_submit_solution(form_data, url)
         else:
             return self.show_course_list()
