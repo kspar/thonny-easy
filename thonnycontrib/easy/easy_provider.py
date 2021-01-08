@@ -51,22 +51,22 @@ class EasyExerciseProvider(ExerciseProvider):
                 url = ROOT_PATH if form_data.get("from") is None else form_data.get("from")
 
             if EXERCISE_LIST_RE.match(url):
-                return self.show_exercise_list(url)
+                return self._show_exercise_list(url)
 
             elif EXERCISE_DESCRIPTION_RE.match(url):
-                return self.show_exercise_description(url)
+                return self._show_exercise_description(url)
 
             elif COURSE_LIST_RE.match(url) or url == ROOT_PATH:
-                return self.show_course_list()
+                return self._show_course_list()
 
             elif SUBMIT_SOLUTION_RE.match(url):
-                return self.handle_submit_solution(form_data, url)
+                return self._handle_submit_solution(form_data, url)
 
             elif url == LOGOUT_PATH:
                 self._logout()
                 return "<p>Nägemist!</p>", HOME
             else:
-                return self.show_course_list()
+                return self._show_course_list()
 
         except AuthRequiredException:
             # Allow only one instance of the auth server in all cases.
@@ -93,21 +93,21 @@ class EasyExerciseProvider(ExerciseProvider):
             if retries == AUTH_ALLOWED_RETRIES:
                 self.easy.shutdown()
 
-    def handle_submit_solution(self, form_data, url):
+    def _handle_submit_solution(self, form_data, url):
         course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
         ex_id = url.split("/exercises/")[1].replace("/submissions", "")
         return self._submit_solution(course_id, ex_id, form_data)
 
-    def show_course_list(self):
+    def _show_course_list(self):
         courses = self.easy.student.get_courses().courses
         return generate_course_list_html(courses), [self._breadcrumb_courses()]
 
-    def show_exercise_description(self, url):
+    def _show_exercise_description(self, url):
         course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
         ex_id = url.split("/exercises/")[1]
         return self._get_ex_description(course_id, ex_id)
 
-    def show_exercise_list(self, url):
+    def _show_exercise_list(self, url):
         course_id = url.replace("/student/courses/", "").replace("/exercises/", "")
         return self._get_ex_list(course_id)
 
