@@ -19,10 +19,14 @@ EXERCISE_DESCRIPTION_RE = re.compile(r"^/student/courses/[0-9]+/exercises/[0-9]+
 COURSE_LIST_RE = re.compile(r"^/student/courses$")
 SUBMIT_SOLUTION_RE = re.compile(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$")
 
+PRODUCTION = True
+
 
 def _get_easy():
-    return Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', "lahendus.ut.ee")
-    # return Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
+    if PRODUCTION:
+        return Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', "lahendus.ut.ee")
+    else:
+        return Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
 
 
 # noinspection DuplicatedCode
@@ -31,28 +35,6 @@ class EasyExerciseProvider(ExerciseProvider):
         self.exercises_view = exercises_view
         self.easy = _get_easy()
         logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s : %(message)s', level=logging.DEBUG)
-
-    # Needed as separate function to avoid recursive call in auth handling
-    def _handle_ui_request(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
-        if EXERCISE_LIST_RE.match(url):
-            return self.show_exercise_list(url)
-
-        elif EXERCISE_DESCRIPTION_RE.match(url):
-            return self.show_exercise_description(url)
-
-        elif COURSE_LIST_RE.match(url) or url == ROOT_PATH:
-            return self.show_course_list()
-
-        elif SUBMIT_SOLUTION_RE.match(url):
-            return self.handle_submit_solution(form_data, url)
-
-        elif url == LOGOUT_PATH:
-            self.easy.logout_in_browser()
-            self.easy.shutdown()
-            self.easy = _get_easy()
-            return "<p>Nägemist!</p>", HOME
-        else:
-            return self.show_course_list()
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         try:
@@ -74,10 +56,27 @@ class EasyExerciseProvider(ExerciseProvider):
                         self.easy.check_in()
 
                 form_url = form_data.get("from")
-                next_url = ROOT_PATH if form_url is None else form_url
-                return self._handle_ui_request(next_url, form_data)
+                url = ROOT_PATH if form_url is None else form_url
+
+            if EXERCISE_LIST_RE.match(url):
+                return self.show_exercise_list(url)
+
+            elif EXERCISE_DESCRIPTION_RE.match(url):
+                return self.show_exercise_description(url)
+
+            elif COURSE_LIST_RE.match(url) or url == ROOT_PATH:
+                return self.show_course_list()
+
+            elif SUBMIT_SOLUTION_RE.match(url):
+                return self.handle_submit_solution(form_data, url)
+
+            elif url == LOGOUT_PATH:
+                self.easy.logout_in_browser()
+                self.easy.shutdown()
+                self.easy = _get_easy()
+                return "<p>Nägemist!</p>", HOME
             else:
-                return self._handle_ui_request(url, form_data)
+                return self.show_course_list()
 
         except AuthRequiredException:
             # Allow only one instance of the auth server in all cases.
