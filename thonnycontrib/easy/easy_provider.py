@@ -40,14 +40,7 @@ class EasyExerciseProvider(ExerciseProvider):
         try:
             if url == AUTH_PATH:
                 if self.easy.is_auth_required():
-                    self.easy.start_auth_in_browser()
-
-                    retries = 0
-                    while self.easy.is_auth_in_progress(AUTH_TIMEOUT_SECONDS):
-                        retries += 1
-                        logging.info(f'Authentication still not done... Attempt {retries}/{AUTH_ALLOWED_RETRIES}.')
-                        if retries == AUTH_ALLOWED_RETRIES:
-                            self.easy.shutdown()
+                    self._authenticate()
 
                     if self.easy.is_auth_required():
                         return generate_error_auth(), HOME
@@ -55,8 +48,7 @@ class EasyExerciseProvider(ExerciseProvider):
                         logging.info('Authenticated! Checking in...')
                         self.easy.check_in()
 
-                form_url = form_data.get("from")
-                url = ROOT_PATH if form_url is None else form_url
+                url = ROOT_PATH if form_data.get("from") is None else form_data.get("from")
 
             if EXERCISE_LIST_RE.match(url):
                 return self.show_exercise_list(url)
@@ -71,9 +63,7 @@ class EasyExerciseProvider(ExerciseProvider):
                 return self.handle_submit_solution(form_data, url)
 
             elif url == LOGOUT_PATH:
-                self.easy.logout_in_browser()
-                self.easy.shutdown()
-                self.easy = _get_easy()
+                self._logout()
                 return "<p>Nägemist!</p>", HOME
             else:
                 return self.show_course_list()
@@ -89,6 +79,20 @@ class EasyExerciseProvider(ExerciseProvider):
         except Exception as e:
             return generate_error_html(e), [self._breadcrumb_courses()]
 
+    def _logout(self):
+        self.easy.logout_in_browser()
+        self.easy.shutdown()
+        self.easy = _get_easy()
+
+    def _authenticate(self):
+        self.easy.start_auth_in_browser()
+        retries = 0
+        while self.easy.is_auth_in_progress(AUTH_TIMEOUT_SECONDS):
+            retries += 1
+            logging.info(f'Authentication still not done... Attempt {retries}/{AUTH_ALLOWED_RETRIES}.')
+            if retries == AUTH_ALLOWED_RETRIES:
+                self.easy.shutdown()
+
     def handle_submit_solution(self, form_data, url):
         course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
         ex_id = url.split("/exercises/")[1].replace("/submissions", "")
@@ -96,8 +100,7 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def show_course_list(self):
         courses = self.easy.student.get_courses().courses
-        result = generate_course_list_html(courses), [self._breadcrumb_courses()]
-        return result
+        return generate_course_list_html(courses), [self._breadcrumb_courses()]
 
     def show_exercise_description(self, url):
         course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
@@ -115,7 +118,6 @@ class EasyExerciseProvider(ExerciseProvider):
         exercises = self.easy.student.get_course_exercises(course_id).exercises
         breadcrumb_ex_list = self._breadcrumb_exercises(course_id)
         html = generate_exercise_list_html(breadcrumb_ex_list[0], exercises)
-
         return html, [self._breadcrumb_courses(), breadcrumb_ex_list]
 
     def _get_ex_description(self, course_id: str, exercise_id: str):
