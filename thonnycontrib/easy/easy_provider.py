@@ -7,6 +7,13 @@ from easy import Ez, AuthRequiredException
 from .templates_generator import *
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
+AUTH_ALLOWED_RETRIES = 6
+AUTH_TIMEOUT_SECONDS = 10
+ROOT = "/"
+HOME = [(ROOT, "Lahendus")]
+LOGOUT_PATH = "/logout"
+AUTH_PATH = "/auth"
+
 
 def _get_easy():
     return Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', "lahendus.ut.ee")
@@ -28,7 +35,7 @@ class EasyExerciseProvider(ExerciseProvider):
         elif re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+$", url):
             return self.show_exercise_description(url)
 
-        elif re.match(r"^/student/courses$", url) or url == "/":
+        elif re.match(r"^/student/courses$", url) or url == ROOT:
             return self.show_course_list()
 
         elif re.match(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$", url):
@@ -38,35 +45,33 @@ class EasyExerciseProvider(ExerciseProvider):
             return self.show_course_list()
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
-        home = [("/", "Lahendus")]
-
         try:
-            if url == "/auth":
+            if url == AUTH_PATH:
                 if self.easy.is_auth_required():
                     self.easy.start_auth_in_browser()
 
-                    retries, allowed_retries = 0, 6
-                    while self.easy.is_auth_in_progress(10):
+                    retries = 0
+                    while self.easy.is_auth_in_progress(AUTH_TIMEOUT_SECONDS):
                         retries += 1
-                        logging.info(f'Authentication still not done... Attempt {retries}/{allowed_retries}.')
-                        if retries == allowed_retries:
+                        logging.info(f'Authentication still not done... Attempt {retries}/{AUTH_ALLOWED_RETRIES}.')
+                        if retries == AUTH_ALLOWED_RETRIES:
                             self.easy.shutdown()
 
                     if self.easy.is_auth_required():
-                        return generate_error_auth(), home
+                        return generate_error_auth(), HOME
                     else:
                         logging.info('Authenticated! Checking in...')
                         self.easy.check_in()
 
                 form_url = form_data.get("from")
-                next_url = "/" if form_url is None else form_url
+                next_url = ROOT if form_url is None else form_url
                 return self._handle_ui_request(next_url, form_data)
 
-            elif url == "/logout":
+            elif url == LOGOUT_PATH:
                 self.easy.logout_in_browser()
                 self.easy.shutdown()
                 self.easy = _get_easy()
-                return "<p>Nägemist!</p>", home
+                return "<p>Nägemist!</p>", HOME
             else:
                 return self._handle_ui_request(url, form_data)
 
@@ -74,9 +79,9 @@ class EasyExerciseProvider(ExerciseProvider):
             # Allow only one instance of the auth server in all cases.
             if self.easy.is_auth_in_progress(0):
                 self.easy.shutdown()
-                return generate_error_auth(), home
+                return generate_error_auth(), HOME
 
-            return generate_login_html(url), home
+            return generate_login_html(url), HOME
 
         except Exception as e:
             return generate_error_html(e), [self._breadcrumb_courses()]
@@ -132,4 +137,4 @@ class EasyExerciseProvider(ExerciseProvider):
         return f"/student/courses/", "Kursused"
 
     def get_menu_items(self) -> List[Tuple[str, Union[str, Callable, None]]]:
-        return [("Logi sisse", "/auth") if self.easy.is_auth_required() else ("Logi välja", "/logout")]
+        return [("Logi sisse", AUTH_PATH) if self.easy.is_auth_required() else ("Logi välja", LOGOUT_PATH)]
