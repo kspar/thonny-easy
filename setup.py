@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="thonny-easy",
-    version="0.5.6",
+    version="0.5.7",
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
     description="Thonny plugin for lahendus.ut.ee",
@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/kspar/easy-thonny",
     packages=setuptools.find_namespace_packages(),
     install_requires=[
-        'easy-py>=0.3.4',
+        'easy-py>=0.3.5',
         'thonny>=3.2.7',
         'pillow>=8.0',
         'chevron>=0.13.1'
