@@ -7,17 +7,16 @@ from easy import Ez, AuthRequiredException
 from .templates_generator import *
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
 
-AUTH_ALLOWED_RETRIES = 6
-AUTH_TIMEOUT_SECONDS = 10
+AUTH_TIMEOUT_SECONDS = 300
 ROOT_PATH = "/"
 HOME = [(ROOT_PATH, "Lahendus")]
 LOGOUT_PATH = "/logout"
 AUTH_PATH = "/auth"
 
-EXERCISE_LIST_RE = re.compile(r"^/student/courses/[0-9]+/exercises/$")
-EXERCISE_DESCRIPTION_RE = re.compile(r"^/student/courses/[0-9]+/exercises/[0-9]+$")
+EXERCISE_LIST_RE = re.compile(r"^/student/courses/([0-9]+)/exercises/$")
+EXERCISE_DESCRIPTION_RE = re.compile(r"^/student/courses/([0-9]+)/exercises/([0-9]+)$")
 COURSE_LIST_RE = re.compile(r"^/student/courses$")
-SUBMIT_SOLUTION_RE = re.compile(r"^/student/courses/[0-9]+/exercises/[0-9]+/submissions$")
+SUBMIT_SOLUTION_RE = re.compile(r"^/student/courses/([0-9]+)/exercises/([0-9]+)/submissions$")
 
 PRODUCTION = True
 
@@ -50,17 +49,17 @@ class EasyExerciseProvider(ExerciseProvider):
 
                 url = ROOT_PATH if form_data.get("from") is None else form_data.get("from")
 
-            if EXERCISE_LIST_RE.match(url):
-                return self._show_exercise_list(url)
+            if EXERCISE_LIST_RE.fullmatch(url):
+                return self._show_exercise_list(EXERCISE_LIST_RE.fullmatch(url))
 
-            elif EXERCISE_DESCRIPTION_RE.match(url):
-                return self._show_exercise_description(url)
+            elif EXERCISE_DESCRIPTION_RE.fullmatch(url):
+                return self._show_exercise_description(EXERCISE_DESCRIPTION_RE.fullmatch(url))
 
-            elif COURSE_LIST_RE.match(url) or url == ROOT_PATH:
+            elif COURSE_LIST_RE.fullmatch(url) or url == ROOT_PATH:
                 return self._show_course_list()
 
-            elif SUBMIT_SOLUTION_RE.match(url):
-                return self._handle_submit_solution(form_data, url)
+            elif SUBMIT_SOLUTION_RE.fullmatch(url):
+                return self._handle_submit_solution(form_data, SUBMIT_SOLUTION_RE.fullmatch(url))
 
             elif url == LOGOUT_PATH:
                 self._logout()
@@ -86,29 +85,22 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def _authenticate(self):
         self.easy.start_auth_in_browser()
-        retries = 0
-        while self.easy.is_auth_in_progress(AUTH_TIMEOUT_SECONDS):
-            retries += 1
-            logging.info(f'Authentication still not done... Attempt {retries}/{AUTH_ALLOWED_RETRIES}.')
-            if retries == AUTH_ALLOWED_RETRIES:
-                self.easy.shutdown()
+        self.easy.is_auth_in_progress(AUTH_TIMEOUT_SECONDS)
 
-    def _handle_submit_solution(self, form_data, url):
-        course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
-        ex_id = url.split("/exercises/")[1].replace("/submissions", "")
+    def _handle_submit_solution(self, form_data, match):
+        course_id, ex_id = match.group(1), match.group(2)
         return self._submit_solution(course_id, ex_id, form_data)
 
     def _show_course_list(self):
         courses = self.easy.student.get_courses().courses
         return generate_course_list_html(courses), [self._breadcrumb_courses()]
 
-    def _show_exercise_description(self, url):
-        course_id = url.replace("/student/courses/", "").split("/exercises/")[0]
-        ex_id = url.split("/exercises/")[1]
+    def _show_exercise_description(self, match):
+        course_id, ex_id = match.group(1), match.group(2)
         return self._get_ex_description(course_id, ex_id)
 
-    def _show_exercise_list(self, url):
-        course_id = url.replace("/student/courses/", "").replace("/exercises/", "")
+    def _show_exercise_list(self, match):
+        course_id = match.group(1)
         return self._get_ex_list(course_id)
 
     def _get_course_list(self):
