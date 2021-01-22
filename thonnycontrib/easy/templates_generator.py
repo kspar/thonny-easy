@@ -14,6 +14,10 @@ def render(template_name: str, data: Dict) -> str:
         return chevron.render(f, data)
 
 
+def generate_update_html(versions):
+    return render("update.mustache", versions)
+
+
 def generate_exercise_list_html(base_url, exercises):
     ex_list = [f'<li><a href="{base_url}{e["id"]}">{e["effective_title"]}</a></li>' for e in exercises]
     if len(ex_list) == 0:

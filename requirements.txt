@@ -2,3 +2,4 @@ easy-py>=0.3.5
 thonny>=3.2.7
 pillow>=8.0
 chevron>=0.13.1
+requests~=2.24.0

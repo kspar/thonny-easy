@@ -2,6 +2,8 @@ import logging
 import re
 from typing import Tuple, List, Union, Callable
 
+import pkg_resources
+import requests
 from easy import Ez, AuthRequiredException
 
 from .templates_generator import *
@@ -37,6 +39,9 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         try:
+            if self._update_required():
+                return generate_update_html(self._get_versions()), HOME
+
             if url == AUTH_PATH:
                 if self.easy.is_auth_required():
                     self._authenticate()
@@ -131,3 +136,17 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def get_menu_items(self) -> List[Tuple[str, Union[str, Callable, None]]]:
         return [("Logi sisse", AUTH_PATH) if self.easy.is_auth_required() else ("Logi välja", LOGOUT_PATH)]
+
+    @staticmethod
+    def _get_versions():
+        installed_version = pkg_resources.require("thonny-easy")[0].version
+
+        resp: requests.Response = requests.get("https://pypi.org/pypi/thonny-easy/json")
+        latest_version = resp.json()["info"]["version"]
+        return {"current": installed_version, "latest": latest_version}
+
+    def _update_required(self):
+        versions = self._get_versions()
+        major_installed, minor_installed, patch_installed = tuple(map(int, versions["current"].split(".")))
+        major_latest, minor_latest, patch_latest = tuple(map(int, versions["latest"].split(".")))
+        return major_installed < major_latest
