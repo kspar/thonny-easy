@@ -80,6 +80,7 @@ class HtmlText(tktextext.TweakableText):
         self.tag_configure("line_block", spacing1=0, spacing3=10, spacing2=0)
         self.tag_configure("em", font=italic_font)
         self.tag_configure("strong", font=bold_font)
+        self.tag_configure("hr", wrap="none")
 
         self.tag_configure(
             "a",
@@ -169,7 +170,7 @@ class HtmlRenderer(HTMLParser):
         self._active_lists = []
         self._active_ol_item_counts = []
         self._active_forms = []
-        self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "form", "h1", "h2", "summary", "details"]
+        self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "form", "h1", "h2", "summary", "details", "hr"]
         self._alternatives = {"b": "strong", "i": "em"}
         self._simple_tags = ["strong", "u", "em"]
         self._ignored_tags = ["span"]
@@ -220,6 +221,9 @@ class HtmlRenderer(HTMLParser):
                 self._append_file_input(attrs)
             elif attrs["type"] == "submit":
                 self._append_submit_button(attrs)
+        elif tag == "hr":
+            self._append_text("─" * 40)
+
 
     def handle_endtag(self, tag):
         tag = self._normalize_tag(tag)

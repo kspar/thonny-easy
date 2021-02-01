@@ -61,6 +61,8 @@ class DemoExerciseProvider(ExerciseProvider):
 </div> 
 <div class="paragraph"> 
  <p>Kuigi tegelikult pannakse lause lõppu punkt, siis siin ärge pange. (Automaatkontroll isegi annab punkti või mõne muu üleliigse osa korral veateate.)</p>
+ <hr/>
+ <p>Peale hr-i</p>
 </div>
 <details>
 <summary class="title">Näited programmi tööst</summary> 
