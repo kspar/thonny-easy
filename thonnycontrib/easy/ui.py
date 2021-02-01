@@ -1,4 +1,5 @@
 import concurrent.futures
+import platform
 import tkinter as tk
 import traceback
 from io import BytesIO
@@ -247,6 +248,8 @@ class BreadcrumbsBar(tktextext.TweakableText):
         self._click_handler = click_handler
 
     def set_links(self, links):
+        # NBSP and other space-like weird chars don't work properly in Mac
+        spacer = " " if platform.system() == "Darwin" else "\u00a0"
         try:
             self._changing = True
 
@@ -259,7 +262,7 @@ class BreadcrumbsBar(tktextext.TweakableText):
             links[-1] = (links[-1][0], links[-1][1].rstrip("\r\n"))
 
             for key, label in links:
-                self.direct_insert("end", "/\xa0")
+                self.direct_insert("end", "/" + spacer)
                 if not label.endswith("\n"):
                     label += " "
 

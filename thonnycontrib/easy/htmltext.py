@@ -1,4 +1,5 @@
 import os.path
+import platform
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -41,6 +42,20 @@ class HtmlText(tktextext.TweakableText):
     def set_html_content(self, html):
         self.clear()
         self._renderer.feed(html)
+        if platform.system() == "Darwin":
+            self._replace_nbsps_with_spaces()
+
+    def _replace_nbsps_with_spaces(self):
+        # NBSP doesn't work properly in Mac, but during rendering
+        # HTML it's useful to keep it separate form regular space.
+        start = "1.0"
+        while True:
+            match = self.search(NBSP, start, exact=True, forwards=True)
+            if not match:
+                break
+            self.direct_delete(match)
+            self.direct_insert(match, " ")
+            start = match + " +1 c"
 
     def _configure_tags(self):
         main_font = tkfont.nametofont("TkDefaultFont")
