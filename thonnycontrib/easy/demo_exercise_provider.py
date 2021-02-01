@@ -110,10 +110,19 @@ class DemoExerciseProvider(ExerciseProvider):
         <li>küsib kasutajalt täisarvu, mis tähistab ühe kuu järjekorranumbrit (jaanuar 1, veebruar 2 jne);</li>
         <li>väljastab, mitu uut mootorratast sel kuul registreeriti.</li>
     </ol>
+    
+    pre:
+    <pre>
+essa
+tessa
+kossa</pre>
+post
 
     <p>Näited programmi tööst:</p>
     <img src="https://courses.cs.ut.ee/2017/eprogalkool/fall/uploads/Main/yl5.1.png"/>
     
+     a<hr/>b
+    <p>Peale hr-i</p>
     <p>Kui olete juba hulk aega<br/>proovinud ülesannet iseseisvalt lahendada ja see ikka ei õnnestu, siis võib-olla saate
         abi <a href="http://progtugi.cs.ut.ee/#/ts/58a1da8ff953770b0ab52569/">murelahendajalt</a>. Püütud on
         tüüpilisemaid probleemseid kohti selgitada ja anda vihjeid.</p>

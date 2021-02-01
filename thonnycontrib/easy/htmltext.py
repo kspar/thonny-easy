@@ -99,7 +99,6 @@ class HtmlText(tktextext.TweakableText):
         self.tag_configure(
             "code",
             font=fixed_font,
-            # wrap="none", # TODO: needs automatic hor-scrollbar and better padding mgmt
             background=gutter_options["background"],
             lmargincolor=self["background"]
         )
@@ -273,7 +272,7 @@ class HtmlRenderer(HTMLParser):
         self.widget.direct_insert("mark", "\n", tags=self.widget.tag_names("mark-1c"))
 
         # For certain tags add vertical spacer (if it's not there already)
-        if (tag in ("p", "ul", "ol", "summary", "details", "table")
+        if (tag in ("p", "ul", "ol", "summary", "details", "table", "pre")
                 and self.widget.get("mark-2c", "mark") != VERTICAL_SPACER
                 and self.widget.index("mark-1c linestart") != "1.0"):
             self.widget.direct_insert("mark", VERTICAL_SPACER)
@@ -300,10 +299,18 @@ class HtmlRenderer(HTMLParser):
             self._active_lists.pop()
 
     def _prepare_text(self, text):
+        # NB! <code> is inline, but many people make it block for a class.
+        # As style information is not consulted here, it's better to treat it as block always
         if "pre" not in self._context_tags and "code" not in self._context_tags:
             text = text.replace("\n", " ").replace("\r", " ")
             while "  " in text:
                 text = text.replace("  ", " ")
+
+        text = text.replace("\r\n", "\n")
+        # remove single starting NL even in pre and code
+        # (it's not actually a valid approach, but it's simple and works unless there the element contains funny markup)
+        if text.startswith("\n"):
+            text = text[1:]
 
         return text
 
