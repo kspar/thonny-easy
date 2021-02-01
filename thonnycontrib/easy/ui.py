@@ -19,6 +19,7 @@ _images_by_urls = {}
 class ExercisesView(ttk.Frame):
     def __init__(self, master, exercise_provider_class):
         self._destroyed = False
+        self._poll_scheduler = None
         super().__init__(master, borderwidth=0, relief="flat")
 
         self._provider = exercise_provider_class(self)
@@ -32,7 +33,12 @@ class ExercisesView(ttk.Frame):
         self.vert_scrollbar = ttk.Scrollbar(
             self, orient=tk.VERTICAL, style=scrollbar_style("Vertical")
         )
-        self.vert_scrollbar.grid(row=0, column=1, sticky=tk.NSEW, rowspan=3)
+        self.vert_scrollbar.grid(row=0, column=1, sticky=tk.NSEW, rowspan=2)
+
+        self.hor_scrollbar = ttk.Scrollbar(
+            self, orient=tk.HORIZONTAL, style=scrollbar_style("Horizontal")
+        )
+        self.hor_scrollbar.grid(row=2, column=0, sticky=tk.NSEW)
 
         tktextext.fixwordbreaks(tk._default_root)
         self.init_header(row=0, column=0)
@@ -53,12 +59,14 @@ class ExercisesView(ttk.Frame):
             insertwidth=0,
             borderwidth=0,
             highlightthickness=0,
-            yscrollcommand=self.vert_scrollbar.set
+            yscrollcommand=self.vert_scrollbar.set,
+            xscrollcommand=self.hor_scrollbar.set,
         )
 
         self._html_widget.grid(row=1, column=0, sticky="nsew")
 
         self.vert_scrollbar["command"] = self._html_widget.yview
+        self.hor_scrollbar["command"] = self._html_widget.xview
 
         self._poll_scheduler = None
 
