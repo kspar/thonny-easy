@@ -46,6 +46,13 @@ def generate_error_auth() -> str:
     return f"""<h1>Autentimine ebaõnnestus!</h1><a href="/auth">Alusta autentimist uuesti</a>"""
 
 
+def _convert_to_str(value):
+    if value is None:
+        return value
+    else:
+        return str(value)
+
+
 def generate_exercise_html(provider, course_id, exercise_id) -> str:
     def has_submissions() -> bool:
         return len(provider.easy.student.get_all_submissions(course_id, exercise_id).submissions) > 0
@@ -58,12 +65,12 @@ def generate_exercise_html(provider, course_id, exercise_id) -> str:
     details = provider.easy.student.get_exercise_details(course_id, exercise_id)
     return render("exercise.mustache", {"effective_title": details.effective_title,
                                         "text_html": details.text_html,
-                                        "grade_auto": latest.grade_auto,
+                                        "grade_auto": _convert_to_str(latest.grade_auto),
                                         "feedback_auto": latest.feedback_auto,
                                         "solution": latest.solution,
                                         "EDITOR_CONTENT_NAME": EDITOR_CONTENT_NAME,
                                         "course_id": course_id,
                                         "exercise_id": exercise_id,
                                         "latest_feedback_teacher": latest.feedback_teacher,
-                                        "latest_grade_teacher": latest.grade_teacher,
+                                        "latest_grade_teacher": _convert_to_str(latest.grade_teacher),
                                         "provider_url": provider.easy.util.idp_client_name})

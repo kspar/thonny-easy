@@ -6,28 +6,35 @@
     Lahenduses</a>
 <br/>
 <br/>
-
+<hr>
 <h1>Esitamine</h1>
 
-<h2>Automaatne hinnang</h2>
+{{#grade_auto}}
+    <h2>Automaatne hinnang</h2>
+    <div>Automaatne hinne: {{grade_auto}}/100</div>
+    <br/>
+    <code>{{feedback_auto}}</code>
+    <br/>
+{{/grade_auto}}
 
-<div>Automaatne hinne: {{grade_auto}}/100</div>
-<br/>
-<code>{{feedback_auto}}</code>
-<br/>
+{{#latest_grade_teacher}}
+    <h2>Õpetaja hinnang</h2>
+    <div>Hinne: {{latest_grade_teacher}}/100</div>
+    <br/>
+{{/latest_grade_teacher}}
 
-<h2>Õpetaja hinnang</h2>
-<div>Hinne: {{latest_grade_teacher}}/100</div>
-<br/>
-
-<div>{{latest_feedback_teacher}}</div>
-<br/>
+{{#latest_feedback_teacher}}
+    <div>{{latest_feedback_teacher}}</div>
+    <br/>
+{{/latest_feedback_teacher}}
 
 
-<h2>Viimane esitus</h2>
-<br/>
-<code>{{solution}}</code>
-<br/>
+{{#solution}}
+    <h2>Viimane esitus</h2>
+    <br/>
+    <code>{{solution}}</code>
+    <br/>
+{{/solution}}
 
 <form action="/student/courses/{{course_id}}/exercises/{{exercise_id}}/submissions">
     <input type="hidden" name="{{EDITOR_CONTENT_NAME}}"/>
