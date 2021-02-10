@@ -24,10 +24,21 @@ PRODUCTION = True
 
 
 def _get_easy():
+    auth_browser_success_msg = "Autentimine õnnestus! Võid nüüd selle lehe sulgeda."
+    auth_browser_fail_msg = "Midagi läks ootamatult valesti. Palun proovi uuesti."
+
     if PRODUCTION:
-        return Ez("ems.lahendus.ut.ee", 'idp.lahendus.ut.ee', "lahendus.ut.ee")
+        return Ez("ems.lahendus.ut.ee",
+                  'idp.lahendus.ut.ee',
+                  "lahendus.ut.ee",
+                  auth_browser_success_msg=auth_browser_success_msg,
+                  auth_browser_fail_msg=auth_browser_fail_msg)
     else:
-        return Ez("dev.ems.lahendus.ut.ee", 'dev.idp.lahendus.ut.ee', "dev.lahendus.ut.ee")
+        return Ez("dev.ems.lahendus.ut.ee",
+                  'dev.idp.lahendus.ut.ee',
+                  "dev.lahendus.ut.ee",
+                  auth_browser_success_msg=auth_browser_success_msg,
+                  auth_browser_fail_msg=auth_browser_fail_msg)
 
 
 # noinspection DuplicatedCode
