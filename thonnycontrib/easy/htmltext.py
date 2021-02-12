@@ -13,6 +13,8 @@ from thonny.codeview import get_syntax_options_for_tag
 NBSP = "\u00A0"
 UL_LI_MARKER = "•" + NBSP
 VERTICAL_SPACER = NBSP + "\n"
+VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input",
+             "link", "meta", "param", "command", "keygen", "source"}
 
 _image_placeholder = None
 
@@ -191,6 +193,7 @@ class HtmlRenderer(HTMLParser):
         self._active_attrs_by_tag = {}  # assuming proper close tags
 
     def handle_starttag(self, tag, attrs):
+        self._close_void_tags()
         tag = self._normalize_tag(tag)
         attrs = dict(attrs)
         if tag in self._ignored_tags:
@@ -261,7 +264,11 @@ class HtmlRenderer(HTMLParser):
             self._add_block_divider(tag)
 
     def handle_data(self, data):
+        self._close_void_tags()
         self._append_text(self._prepare_text(data))
+
+    def _close_void_tags(self):
+        self._context_tags = [tag for tag in self._context_tags if tag not in VOID_TAGS]
 
     def _is_link_tag(self, tag):
         return ":" in tag or "/" in tag or "!" in tag
@@ -295,6 +302,10 @@ class HtmlRenderer(HTMLParser):
         # if self.widget.get("mark-1c", "mark") != NBSP:
 
     def _pop_tag(self, tag):
+        if tag in VOID_TAGS:
+            self._close_void_tags()
+            return
+
         while self._context_tags and self._context_tags[-1] != tag:
             # remove unclosed or synthetic other tags
             self._context_tags.pop()
