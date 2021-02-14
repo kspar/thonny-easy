@@ -55,7 +55,7 @@ class ExercisesView(ttk.Frame):
             read_only=True,
             wrap="word",
             font="TkDefaultFont",
-            padx=10,
+            padx=0,
             pady=0,
             insertwidth=0,
             borderwidth=0,

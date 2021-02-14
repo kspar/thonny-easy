@@ -61,6 +61,7 @@ class HtmlText(tktextext.TweakableText):
 
     def _configure_tags(self):
         main_font = tkfont.nametofont("TkDefaultFont")
+        x_padding = main_font.measure("m")
 
         bold_font = main_font.copy()
         bold_font.configure(weight="bold", size=main_font.cget("size"))
@@ -90,6 +91,7 @@ class HtmlText(tktextext.TweakableText):
         fixed_bold_font = fixed_font.copy()
         fixed_bold_font.configure(weight="bold", size=fixed_font.cget("size"))
 
+        self.tag_configure("_base_", lmargin1=x_padding, lmargin2=x_padding, rmargin=x_padding)
         self.tag_configure("h1", font=h1_font, spacing3=5)
         self.tag_configure("h2", font=h2_font, spacing3=5)
         self.tag_configure("h3", font=h3_font, spacing3=5)
@@ -117,14 +119,15 @@ class HtmlText(tktextext.TweakableText):
             "code",
             font=fixed_font,
             background=gutter_options["background"],
-            lmargincolor=self["background"]
+            lmargincolor=self["background"],
+            rmargincolor=self["background"],
         )
         self.tag_configure(
             "pre",
             font=fixed_font,
             wrap="none",  # TODO: needs automatic hor-scrollbar and better padding mgmt
             background=gutter_options["background"],
-            rmargincolor=gutter_options["background"],
+            rmargincolor=self["background"],
             lmargincolor=self["background"]
         )
         # if ui_utils.get_tk_version_info() >= (8,6,6):
@@ -133,7 +136,7 @@ class HtmlText(tktextext.TweakableText):
         li_indent = main_font.measure("m")
         li_bullet_width = main_font.measure(UL_LI_MARKER)
         for i in range(1, 6):
-            indent = i * li_indent
+            indent = x_padding + i * li_indent
             self.tag_configure("list%d" % i, lmargin1=indent,
                                lmargin2=indent + li_bullet_width)
 
@@ -182,7 +185,7 @@ class HtmlRenderer(HTMLParser):
         self._link_and_form_handler = link_and_form_handler
         self._image_requester = image_requester
         self._unique_tag_count = 0
-        self._context_tags = []
+        self._context_tags = ["_base_"]
         self._active_lists = []
         self._active_ol_item_counts = []
         self._active_forms = []
