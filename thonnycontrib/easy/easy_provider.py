@@ -150,9 +150,9 @@ class EasyExerciseProvider(ExerciseProvider):
 
     @staticmethod
     def _get_versions():
-        installed_version = pkg_resources.require("thonny-easy")[0].version
+        installed_version = pkg_resources.require("thonny-lahendus")[0].version
 
-        resp: requests.Response = requests.get("https://pypi.org/pypi/thonny-easy/json")
+        resp: requests.Response = requests.get("https://pypi.org/pypi/thonny-lahendus/json")
         latest_version = resp.json()["info"]["version"]
         return {"current": installed_version, "latest": latest_version}
 

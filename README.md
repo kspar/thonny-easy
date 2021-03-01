@@ -1,1 +1,1 @@
-## [Thonny](https://thonny.org/) plugin for [lahendus](https://lahendus.ut.ee/).
+## [Thonny](https://thonny.org/) plugin for [Lahendus](https://lahendus.ut.ee/).
