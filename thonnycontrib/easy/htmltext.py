@@ -456,12 +456,6 @@ class HtmlRenderer(HTMLParser):
         if self._active_lists:
             tags.add("list%d" % min(len(self._active_lists), 5))
 
-        # combine tags
-        if "code" in tags and "topic_title" in tags:
-            tags.remove("code")
-            tags.remove("topic_title")
-            tags.add("topic_title_code")
-
         return tuple(sorted(tags))
 
     def update_image(self, name, tk_img):
