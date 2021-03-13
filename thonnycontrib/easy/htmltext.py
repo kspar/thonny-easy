@@ -294,7 +294,9 @@ class HtmlRenderer(HTMLParser):
         while self.widget.get("mark-1c", "mark") in ["\r", "\n", "\t", " "]:
             self.widget.direct_delete("mark-1c")
 
-        self.widget.direct_insert("mark", "\n", tags=self.widget.tag_names("mark-1c"))
+        self.widget.direct_insert("mark", "\n",
+                                  tags=[tag for tag in self.widget.tag_names("mark-1c")
+                                  if tag in self._block_tags])
 
         # For certain tags add vertical spacer (if it's not there already)
         if (tag in ("p", "ul", "ol", "summary", "details", "table", "pre")
