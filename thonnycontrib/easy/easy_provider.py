@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 from typing import Tuple, List, Union, Callable
 
 import pkg_resources
@@ -46,11 +47,14 @@ class EasyExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
         self.exercises_view = exercises_view
         self.easy = _get_easy()
-        logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s : %(message)s', level=logging.DEBUG)
+        self.last_update_check = None
+        logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s : %(message)s', level=logging.INFO)
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
+        logging.info(f"User query: '{url}'. Form data: '{form_data}'.")
         try:
             if self._update_required():
+                logging.info(f"Plug-in update required from user: {self._get_versions()}")
                 return generate_update_html(self._get_versions()), HOME
 
             if url == AUTH_PATH:
@@ -58,6 +62,7 @@ class EasyExerciseProvider(ExerciseProvider):
                     self._authenticate()
 
                     if self.easy.is_auth_required():
+                        logging.info('Authentication failed!')
                         return generate_error_auth(), HOME
                     else:
                         logging.info('Authenticated! Checking in...')
@@ -66,32 +71,45 @@ class EasyExerciseProvider(ExerciseProvider):
                 url = ROOT_PATH if form_data.get("from") is None else form_data.get("from")
 
             if EXERCISE_LIST_RE.fullmatch(url):
+                self.log_match("EXERCISE_LIST", url, form_data)
                 return self._show_exercise_list(EXERCISE_LIST_RE.fullmatch(url))
 
             elif EXERCISE_DESCRIPTION_RE.fullmatch(url):
+                self.log_match("EXERCISE_DESCRIPTION", url, form_data)
                 return self._show_exercise_description(EXERCISE_DESCRIPTION_RE.fullmatch(url))
 
             elif COURSE_LIST_RE.fullmatch(url) or url == ROOT_PATH:
+                self.log_match("COURSE_LIST", url, form_data)
                 return self._show_course_list()
 
             elif SUBMIT_SOLUTION_RE.fullmatch(url):
+                self.log_match("SUBMIT_SOLUTION", url, form_data)
                 return self._handle_submit_solution(form_data, SUBMIT_SOLUTION_RE.fullmatch(url))
 
             elif url == LOGOUT_PATH:
+                self.log_match("LOGOUT_PATH", url, form_data)
                 self._logout()
                 return "<p>Nägemist!</p>", HOME
             else:
+                self.log_match("COURSE_LIST", url, form_data)
                 return self._show_course_list()
 
         except AuthRequiredException:
+            self.log_match("AuthRequiredException", url, form_data)
+
             # Allow only one instance of the auth server in all cases.
             if self.easy.is_auth_in_progress(0):
+                logging.info("Auth server is already running. Closing auth server down.")
                 self.easy.shutdown()
+                logging.info("Returning auth error page.")
                 return generate_error_auth(), HOME
 
+            logging.info("Auth required, returning auth page.")
             return generate_login_html(url), HOME
 
         except Exception as e:
+            self.log_match("Exception", url, form_data)
+            logging.warning(f"Unexpected error: '{e}'")
             return generate_error_html(e), [self._breadcrumb_courses()]
 
     def _logout(self):
@@ -150,14 +168,45 @@ class EasyExerciseProvider(ExerciseProvider):
 
     @staticmethod
     def _get_versions():
+        logging.info("Getting the installed plugin-in version info via pkg_resources...")
         installed_version = pkg_resources.require("thonny-lahendus")[0].version
 
+        logging.info("Getting the latest plugin-in version info via pypi...")
         resp: requests.Response = requests.get("https://pypi.org/pypi/thonny-lahendus/json")
         latest_version = resp.json()["info"]["version"]
-        return {"current": installed_version, "latest": latest_version}
+
+        versions = {"current": installed_version, "latest": latest_version}
+        logging.info(f"Plug-in version info: {versions}")
+        return versions
 
     def _update_required(self):
+        def minutes_passed(oldepoch, minutes: int):
+            if oldepoch is None:
+                return True
+            return time.time() - oldepoch >= 60 * minutes
+
+        check_every = 10
+        check_required = minutes_passed(self.last_update_check, check_every)
+
+        if not check_required:
+            logging.info(f"Skipping plug-in update check as {check_every} minutes are not passed from the last check.")
+            return False
+
+        logging.info("Checking for plug-in update...")
         versions = self._get_versions()
         major_installed, minor_installed, patch_installed = tuple(map(int, versions["current"].split(".")))
         major_latest, minor_latest, patch_latest = tuple(map(int, versions["latest"].split(".")))
-        return major_installed < major_latest
+
+        update_required = major_installed < major_latest
+        if not update_required:
+            logging.info(f"Version '{major_installed}' < '{major_latest}' is {update_required}, no update required.")
+        else:
+            logging.info(f"Version '{major_installed}' < '{major_latest}' is {update_required}, update required.")
+
+        self.last_update_check = time.time()
+
+        return update_required
+
+    @staticmethod
+    def log_match(matched_action: str, url: str, form_data: FormData):
+        logging.info(f"User query: '{url}'. Form data: '{form_data}'. ---> {matched_action}")
