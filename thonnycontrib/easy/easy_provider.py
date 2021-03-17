@@ -48,7 +48,7 @@ class EasyExerciseProvider(ExerciseProvider):
         self.exercises_view = exercises_view
         self.easy = _get_easy()
         self.last_update_check = None
-        logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s : %(message)s', level=logging.INFO)
+        logging.basicConfig(level=logging.INFO)
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         logging.info(f"User query: '{url}'. Form data: '{form_data}'.")
