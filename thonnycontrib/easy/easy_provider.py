@@ -23,6 +23,8 @@ SUBMIT_SOLUTION_RE = re.compile(r"^/student/courses/([0-9]+)/exercises/([0-9]+)/
 
 PRODUCTION = True
 
+logger = logging.getLogger(__name__)
+
 
 def _get_easy():
     auth_browser_success_msg = "Autentimine õnnestus! Võid nüüd selle lehe sulgeda."
@@ -48,13 +50,12 @@ class EasyExerciseProvider(ExerciseProvider):
         self.exercises_view = exercises_view
         self.easy = _get_easy()
         self.last_update_check = None
-        logging.basicConfig(level=logging.INFO)
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
-        logging.info(f"User query: '{url}'. Form data: '{form_data}'.")
+        logger.info(f"User query: '{url}'. Form data: '{form_data}'.")
         try:
             if self._update_required():
-                logging.info(f"Plug-in update required from user: {self._get_versions()}")
+                logger.info(f"Plug-in update required from user: {self._get_versions()}")
                 return generate_update_html(self._get_versions()), HOME
 
             if url == AUTH_PATH:
@@ -62,10 +63,10 @@ class EasyExerciseProvider(ExerciseProvider):
                     self._authenticate()
 
                     if self.easy.is_auth_required():
-                        logging.info('Authentication failed!')
+                        logger.info('Authentication failed!')
                         return generate_error_auth(), HOME
                     else:
-                        logging.info('Authenticated! Checking in...')
+                        logger.info('Authenticated! Checking in...')
                         self.easy.check_in()
 
                 url = ROOT_PATH if form_data.get("from") is None else form_data.get("from")
@@ -99,17 +100,17 @@ class EasyExerciseProvider(ExerciseProvider):
 
             # Allow only one instance of the auth server in all cases.
             if self.easy.is_auth_in_progress(0):
-                logging.info("Auth server is already running. Closing auth server down.")
+                logger.info("Auth server is already running. Closing auth server down.")
                 self.easy.shutdown()
-                logging.info("Returning auth error page.")
+                logger.info("Returning auth error page.")
                 return generate_error_auth(), HOME
 
-            logging.info("Auth required, returning auth page.")
+            logger.info("Auth required, returning auth page.")
             return generate_login_html(url), HOME
 
         except Exception as e:
             self.log_match("Exception", url, form_data)
-            logging.warning(f"Unexpected error: '{e}'")
+            logger.warning(f"Unexpected error: '{e}'")
             return generate_error_html(e), [self._breadcrumb_courses()]
 
     def _logout(self):
@@ -168,15 +169,15 @@ class EasyExerciseProvider(ExerciseProvider):
 
     @staticmethod
     def _get_versions():
-        logging.info("Getting the installed plugin-in version info via pkg_resources...")
+        logger.info("Getting the installed plugin-in version info via pkg_resources...")
         installed_version = pkg_resources.require("thonny-lahendus")[0].version
 
-        logging.info("Getting the latest plugin-in version info via pypi...")
+        logger.info("Getting the latest plugin-in version info via pypi...")
         resp: requests.Response = requests.get("https://pypi.org/pypi/thonny-lahendus/json")
         latest_version = resp.json()["info"]["version"]
 
         versions = {"current": installed_version, "latest": latest_version}
-        logging.info(f"Plug-in version info: {versions}")
+        logger.info(f"Plug-in version info: {versions}")
         return versions
 
     def _update_required(self):
@@ -189,19 +190,19 @@ class EasyExerciseProvider(ExerciseProvider):
         check_required = minutes_passed(self.last_update_check, check_every)
 
         if not check_required:
-            logging.info(f"Skipping plug-in update check as {check_every} minutes are not passed from the last check.")
+            logger.info(f"Skipping plug-in update check as {check_every} minutes are not passed from the last check.")
             return False
 
-        logging.info("Checking for plug-in update...")
+        logger.info("Checking for plug-in update...")
         versions = self._get_versions()
         major_installed, minor_installed, patch_installed = tuple(map(int, versions["current"].split(".")))
         major_latest, minor_latest, patch_latest = tuple(map(int, versions["latest"].split(".")))
 
         update_required = major_installed < major_latest
         if not update_required:
-            logging.info(f"Version '{major_installed}' < '{major_latest}' is {update_required}, no update required.")
+            logger.info(f"Version '{major_installed}' < '{major_latest}' is {update_required}, no update required.")
         else:
-            logging.info(f"Version '{major_installed}' < '{major_latest}' is {update_required}, update required.")
+            logger.info(f"Version '{major_installed}' < '{major_latest}' is {update_required}, update required.")
 
         self.last_update_check = time.time()
 
@@ -209,4 +210,4 @@ class EasyExerciseProvider(ExerciseProvider):
 
     @staticmethod
     def log_match(matched_action: str, url: str, form_data: FormData):
-        logging.info(f"User query: '{url}'. Form data: '{form_data}'. ---> {matched_action}")
+        logger.info(f"User query: '{url}'. Form data: '{form_data}'. ---> {matched_action}")
