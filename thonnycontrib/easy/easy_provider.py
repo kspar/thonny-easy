@@ -5,7 +5,7 @@ from typing import Tuple, List, Union, Callable
 
 import pkg_resources
 import requests
-from easy import Ez, AuthRequiredException
+from easy import Ez, AuthRequiredException, decode_token
 
 from .templates_generator import *
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
@@ -66,7 +66,9 @@ class EasyExerciseProvider(ExerciseProvider):
                         logger.info('Authentication failed!')
                         return generate_error_auth(), HOME
                     else:
-                        logger.info('Authenticated! Checking in...')
+                        info = decode_token(self.easy.util.get_valid_access_token().token)
+                        logger.info("Authenticated!")
+                        logger.info(f"Checking in as {info['given_name']} {info['family_name']} ({info['email']})")
                         self.easy.check_in()
 
                 url = ROOT_PATH if form_data.get("from") is None else form_data.get("from")
