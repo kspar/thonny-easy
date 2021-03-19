@@ -1,4 +1,4 @@
-from thonny import get_workbench
+from thonny import get_workbench, THONNY_USER_DIR
 
 from thonnycontrib.easy.ui import ExercisesView
 
@@ -16,5 +16,16 @@ class DemoExercisesView(ExercisesView):
 
 
 def load_plugin():
+    import logging
+    import os.path
+    formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s")
+    log_file = os.path.join(THONNY_USER_DIR, "lahendus.log")
+    file_handler = logging.FileHandler(log_file, encoding="UTF-8", mode="a")
+    file_handler.setFormatter(formatter)
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+
     # get_workbench().add_view(DemoExercisesView, "DemoEx", "ne")
     get_workbench().add_view(EasyExercisesView, "Lahendus", "ne")
