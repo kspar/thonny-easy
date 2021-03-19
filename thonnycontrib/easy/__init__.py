@@ -18,6 +18,7 @@ class DemoExercisesView(ExercisesView):
 def load_plugin():
     import logging
     import os.path
+    import platform
     formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s")
     log_file = os.path.join(THONNY_USER_DIR, "lahendus.log")
     file_handler = logging.FileHandler(log_file, encoding="UTF-8", mode="a")
@@ -26,6 +27,7 @@ def load_plugin():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     logger.addHandler(file_handler)
+    logger.info(f"Starting plug-in on '{platform.platform()}'")
 
     # get_workbench().add_view(DemoExercisesView, "DemoEx", "ne")
     get_workbench().add_view(EasyExercisesView, "Lahendus", "ne")
