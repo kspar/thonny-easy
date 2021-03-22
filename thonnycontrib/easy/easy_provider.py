@@ -67,8 +67,11 @@ class EasyExerciseProvider(ExerciseProvider):
                         return generate_error_auth(), HOME
                     else:
                         info = decode_token(self.easy.util.get_valid_access_token().token)
+                        username, email = info['preferred_username'], info['email']
+                        given_name, family_name = info['given_name'], info['family_name']
+
                         logger.info("Authenticated!")
-                        logger.info(f"Checking in as {info['given_name']} {info['family_name']} ({info['email']})")
+                        logger.info(f"Check-in. User: '{username}'. Name: {given_name} {family_name}. Email: {email}.")
                         self.easy.check_in()
 
                 url = ROOT_PATH if form_data.get("from") is None else form_data.get("from")
