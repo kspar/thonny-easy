@@ -34,6 +34,10 @@ def generate_course_list_html(courses):
         return f"<ul>{''.join(course_lst)}</ul>"
 
 
+def generate_role_not_allowed_html():
+    return "<div>Sul puudub õpilase roll, mis on vajalik plugina kasutamiseks.</div>"
+
+
 def generate_login_html(from_url) -> str:
     return render("authenticate.mustache", {"from_url": "/" if from_url is None else from_url})
 

@@ -5,7 +5,7 @@ from typing import Tuple, List, Union, Callable
 
 import pkg_resources
 import requests
-from easy import Ez, AuthRequiredException, decode_token
+from easy import Ez, AuthRequiredException, decode_token, ErrorResponseException
 
 from .templates_generator import *
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
@@ -116,6 +116,11 @@ class EasyExerciseProvider(ExerciseProvider):
         except Exception as e:
             self.log_match("Exception", url, form_data)
             logger.warning(f"Unexpected error: '{e}'")
+
+            if isinstance(e, ErrorResponseException):
+                if e.error_resp.code == "ROLE_NOT_ALLOWED":
+                    return generate_role_not_allowed_html(), HOME
+
             return generate_error_html(e), [self._breadcrumb_courses()]
 
     def _logout(self):
