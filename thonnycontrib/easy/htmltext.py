@@ -11,12 +11,20 @@ from thonny import tktextext, ui_utils, get_workbench
 from thonny.codeview import get_syntax_options_for_tag
 
 NBSP = "\u00A0"
-UL_LI_MARKER = "•" + NBSP
 VERTICAL_SPACER = NBSP + "\n"
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input",
              "link", "meta", "param", "command", "keygen", "source"}
 
 _image_placeholder = None
+
+
+def get_ul_li_marker(depth):
+    """
+    Previous: UL_LI_MARKER = "•" + NBSP
+    """
+    options = ["•", "◦", "▹"]
+    return options[depth % len(options)] + NBSP
+
 
 class HtmlText(tktextext.TweakableText):
     def __init__(self, master, renderer_class, link_and_form_handler, image_requester, read_only=False, **kw):
@@ -134,7 +142,7 @@ class HtmlText(tktextext.TweakableText):
         #    self.tag_configure("code", lmargincolor=self["background"])
 
         li_indent = main_font.measure("m")
-        li_bullet_width = main_font.measure(UL_LI_MARKER)
+        li_bullet_width = main_font.measure(get_ul_li_marker(0))
         for i in range(1, 6):
             indent = x_padding + i * li_indent
             self.tag_configure("list%d" % i, lmargin1=indent,
@@ -220,7 +228,8 @@ class HtmlRenderer(HTMLParser):
             self._append_text(NBSP + "\n")
         elif tag == "li":
             if self._active_lists[-1] == "ul":
-                self._append_text(UL_LI_MARKER)
+                # Set correct li symbol based on the level. Correct for Python indexing
+                self._append_text(get_ul_li_marker(max(0, self._active_lists.count("ul") - 1)))
             elif self._active_lists[-1] == "ol":
                 self._active_ol_item_counts[-1] += 1
                 self._append_text("%d.%s" % (self._active_ol_item_counts[-1], NBSP))
