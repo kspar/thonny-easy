@@ -108,6 +108,7 @@ class HtmlText(tktextext.TweakableText):
         self.tag_configure("em", font=italic_font)
         self.tag_configure("strong", font=bold_font)
         self.tag_configure("hr", wrap="none")
+        self.tag_configure("table", wrap="none", font=fixed_font)  # Fixed font as otherwise centering later won't work.
 
         self.tag_configure(
             "a",
@@ -195,10 +196,12 @@ class HtmlRenderer(HTMLParser):
         self._unique_tag_count = 0
         self._context_tags = ["_base_"]
         self._active_lists = []
+        self._is_active_table = False  # Need to center text later, keep track
         self._active_ol_item_counts = []
         self._active_forms = []
-        self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "form", "h1", "h2", "summary", "details", "hr"]
-        self._alternatives = {"b": "strong", "i": "em"}
+        self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "form", "h1", "h2", "summary", "details", "hr",
+                            "table", "tr"]
+        self._alternatives = {"b": "strong", "i": "em", "th": "td"}
         self._simple_tags = ["strong", "u", "em"]
         self._ignored_tags = ["span"]
         self._active_attrs_by_tag = {}  # assuming proper close tags
@@ -252,7 +255,8 @@ class HtmlRenderer(HTMLParser):
                 self._append_submit_button(attrs)
         elif tag == "hr":
             self._append_text("─" * 40)
-
+        elif tag == "td":  # Need to center text later, keep track
+            self._is_active_table = True
 
     def handle_endtag(self, tag):
         tag = self._normalize_tag(tag)
@@ -268,6 +272,8 @@ class HtmlRenderer(HTMLParser):
             self._active_ol_item_counts.pop()
         elif tag == "form":
             self._active_forms.pop()
+        elif tag == "td":  # Need to center text later, keep track
+            self._is_active_table = False
 
         self._pop_tag(tag)
 
@@ -277,7 +283,11 @@ class HtmlRenderer(HTMLParser):
 
     def handle_data(self, data):
         self._close_void_tags()
-        self._append_text(self._prepare_text(data))
+        # TODO: Not sure if centering should be done here.
+        if self._is_active_table:   # If is table column, center text
+            self._append_text(self._prepare_text(data).center(20, NBSP))
+        else:
+            self._append_text(self._prepare_text(data))
 
     def _close_void_tags(self):
         self._context_tags = [tag for tag in self._context_tags if tag not in VOID_TAGS]
@@ -296,7 +306,7 @@ class HtmlRenderer(HTMLParser):
         self._context_tags.append(tag)
 
     def _add_block_divider(self, tag):
-        if tag == "p" and self._context_tags and self._context_tags[-1] == "li":
+        if tag == "p" and self._context_tags and (self._context_tags[-1] in ["li", "td", "th"]):
             return
 
         # replace all trailing whitespace with a single linebreak
