@@ -1,5 +1,5 @@
-easy-py>=0.3.8
+easy-py>=0.4.0
 thonny>=3.2.7
 pillow>=8.0
 chevron>=0.13.1
-requests~=2.24.0
+requests>=2.27.1
