@@ -203,7 +203,7 @@ class HtmlRenderer(HTMLParser):
                             "table", "tr"]
         self._alternatives = {"b": "strong", "i": "em", "th": "td"}
         self._simple_tags = ["strong", "u", "em"]
-        self._ignored_tags = ["span"]
+        self._ignored_tags = []
         self._active_attrs_by_tag = {}  # assuming proper close tags
 
     def handle_starttag(self, tag, attrs):
@@ -359,7 +359,7 @@ class HtmlRenderer(HTMLParser):
         text = text.replace("\r\n", "\n")
         # remove single starting NL even in pre and code
         # (it's not actually a valid approach, but it's simple and works unless there the element contains funny markup)
-        if text.startswith("\n"):
+        if text.startswith("\n") and self._context_tags[-1] == 'pre':
             text = text[1:]
 
         return text
