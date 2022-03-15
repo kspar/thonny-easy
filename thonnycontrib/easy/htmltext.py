@@ -1,13 +1,12 @@
 import os.path
 import platform
-
 import tkinter as tk
 import tkinter.font as tkfont
 from html.parser import HTMLParser
 from tkinter import ttk
 from typing import List, Tuple, Any
 
-from thonny import tktextext, ui_utils, get_workbench
+from thonny import tktextext, ui_utils
 from thonny.codeview import get_syntax_options_for_tag
 
 NBSP = "\u00A0"
@@ -30,7 +29,6 @@ class HtmlText(tktextext.TweakableText):
     def __init__(self, master, renderer_class, link_and_form_handler, image_requester, read_only=False, **kw):
 
         text_options = get_syntax_options_for_tag("TEXT")
-
 
         super().__init__(
             master=master,
@@ -122,7 +120,6 @@ class HtmlText(tktextext.TweakableText):
         self.tag_bind("a", "<Enter>", self._hyperlink_enter)
         self.tag_bind("a", "<Leave>", self._hyperlink_leave)
 
-
         gutter_options = get_syntax_options_for_tag("GUTTER")
         self.tag_configure(
             "code",
@@ -180,6 +177,7 @@ class HtmlText(tktextext.TweakableText):
 
     def update_image(self, name, data):
         self._renderer.update_image(name, data)
+
 
 class HtmlRenderer(HTMLParser):
     def __init__(self, text_widget, link_and_form_handler, image_requester):
@@ -284,7 +282,7 @@ class HtmlRenderer(HTMLParser):
     def handle_data(self, data):
         self._close_void_tags()
         # TODO: Not sure if centering should be done here.
-        if self._is_active_table:   # If is table column, center text
+        if self._is_active_table:  # If is table column, center text
             self._append_text(self._prepare_text(data).center(20, NBSP))
         else:
             self._append_text(self._prepare_text(data))
@@ -314,8 +312,7 @@ class HtmlRenderer(HTMLParser):
             self.widget.direct_delete("mark-1c")
 
         self.widget.direct_insert("mark", "\n",
-                                  tags=[tag for tag in self.widget.tag_names("mark-1c")
-                                  if tag in self._block_tags])
+                                  tags=[tag for tag in self.widget.tag_names("mark-1c") if tag in self._block_tags])
 
         # For certain tags add vertical spacer (if it's not there already)
         if (tag in ("p", "ul", "ol", "summary", "details", "table", "pre")
@@ -349,17 +346,16 @@ class HtmlRenderer(HTMLParser):
             self._active_lists.pop()
 
     def _prepare_text(self, text):
-        # NB! <code> is inline, but many people make it block for a class.
-        # As style information is not consulted here, it's better to treat it as block always
-        if "pre" not in self._context_tags and "code" not in self._context_tags:
-            text = text.replace("\n", " ").replace("\r", " ")
+        text = text.replace("\r\n", "\n")
+        # Note that <code> is inline
+        if "pre" not in self._context_tags:
+            text = text.replace("\n", " ")
             while "  " in text:
                 text = text.replace("  ", " ")
 
-        text = text.replace("\r\n", "\n")
-        # remove single starting NL even in pre and code
-        # (it's not actually a valid approach, but it's simple and works unless there the element contains funny markup)
-        if text.startswith("\n") and self._context_tags[-1] == 'pre':
+        # Remove single leading newline in <pre>
+        # see https://html.spec.whatwg.org/multipage/syntax.html#element-restrictions
+        if self._context_tags and self._context_tags[-1] == "pre" and text.startswith("\n"):
             text = text[1:]
 
         return text
