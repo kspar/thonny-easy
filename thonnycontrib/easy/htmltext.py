@@ -107,6 +107,7 @@ class HtmlText(tktextext.TweakableText):
         self.tag_configure("strong", font=bold_font)
         self.tag_configure("hr", wrap="none")
         self.tag_configure("table", wrap="none", font=fixed_font)  # Fixed font as otherwise centering later won't work.
+        self.tag_configure("thead", wrap="none", font=fixed_bold_font)
 
         self.tag_configure(
             "a",
