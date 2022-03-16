@@ -282,7 +282,7 @@ class HtmlRenderer(HTMLParser):
 
     def handle_data(self, data):
         self._close_void_tags()
-        # TODO: Not sure if centering should be done here.
+        # TODO: Not sure if centering of the table content should be done here. Probably should be done here.
         if self._is_active_table:  # If is table column, center text
             self._append_text(self._prepare_text(data).center(20, NBSP))
         else:
@@ -316,12 +316,14 @@ class HtmlRenderer(HTMLParser):
                                   tags=[tag for tag in self.widget.tag_names("mark-1c") if tag in self._block_tags])
 
         # For certain tags add vertical spacer (if it's not there already)
-        if (tag in ("p", "ul", "ol", "summary", "details", "table", "pre")
+        if (tag in ("p", "ul", "ol", "summary", "details", "pre")
                 and self.widget.get("mark-2c", "mark") != VERTICAL_SPACER
                 and self.widget.index("mark-1c linestart") != "1.0"):
             self.widget.direct_insert("mark", VERTICAL_SPACER)
 
-        # if self.widget.get("mark-1c", "mark") != NBSP:
+        # For table, always add vertical spacer.
+        if tag == "table":
+            self.widget.direct_insert("mark", VERTICAL_SPACER)
 
     def _pop_tag(self, tag):
         if tag in VOID_TAGS:
