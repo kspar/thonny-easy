@@ -199,7 +199,7 @@ class HtmlRenderer(HTMLParser):
         self._active_ol_item_counts = []
         self._active_forms = []
         self._block_tags = ["div", "p", "ul", "ol", "li", "pre", "form", "h1", "h2", "summary", "details", "hr",
-                            "table", "tr"]
+                            "table", "tr", "img"]
         self._alternatives = {"b": "strong", "i": "em", "th": "td"}
         self._simple_tags = ["strong", "u", "em"]
         self._ignored_tags = []
@@ -316,7 +316,7 @@ class HtmlRenderer(HTMLParser):
                                   tags=[tag for tag in self.widget.tag_names("mark-1c") if tag in self._block_tags])
 
         # For certain tags add vertical spacer (if it's not there already)
-        if (tag in ("p", "ul", "ol", "summary", "details", "pre")
+        if (tag in ("p", "ul", "ol", "summary", "details", "pre", "img")
                 and self.widget.get("mark-2c", "mark") != VERTICAL_SPACER
                 and self.widget.index("mark-1c linestart") != "1.0"):
             self.widget.direct_insert("mark", VERTICAL_SPACER)
