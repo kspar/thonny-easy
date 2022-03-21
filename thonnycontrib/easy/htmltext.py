@@ -365,24 +365,27 @@ class HtmlRenderer(HTMLParser):
 
     def _append_text(self, chars, extra_tags=()):
         # print("APPP", chars, tags)
-        # don't put two horizontal whitespaces next to each other
-        trailing_space = False
-        trailing_tags = set()
-        while self.widget.get("mark-1c") in (" ", "\t"):
-            trailing_space = True
-            trailing_tags.update(self.widget.tag_names("mark-1c"))
-            self.widget.direct_delete("mark-1c")
-
-        last_non_horspace = self.widget.get("mark-1c")
-        if last_non_horspace in ["\n", NBSP]:
-            # don't keep space in the beginning of the line
+        # don't put two horizontal whitespaces next to each other unless it is pre
+        if self._context_tags and "pre" in self._context_tags:
+            pass
+        else:
             trailing_space = False
-            chars.lstrip(" \t")
+            trailing_tags = set()
+            while self.widget.get("mark-1c") in (" ", "\t"):
+                trailing_space = True
+                trailing_tags.update(self.widget.tag_names("mark-1c"))
+                self.widget.direct_delete("mark-1c")
 
-        if (trailing_space and not chars.startswith(" ")
-                and not chars.startswith("\t")):
-            # Restore the required space
-            self.widget.direct_insert("mark", " ", tags=tuple(trailing_tags))
+            last_non_horspace = self.widget.get("mark-1c")
+            if last_non_horspace in ["\n", NBSP]:
+                # don't keep space in the beginning of the line
+                trailing_space = False
+                chars.lstrip(" \t")
+
+            if (trailing_space and not chars.startswith(" ")
+                    and not chars.startswith("\t")):
+                # Restore the required space
+                self.widget.direct_insert("mark", " ", tags=tuple(trailing_tags))
 
         self.widget.direct_insert("mark", chars, self._get_effective_tags(extra_tags))
 
