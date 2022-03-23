@@ -129,6 +129,12 @@ class HtmlText(tktextext.TweakableText):
             lmargincolor=self["background"],
             rmargincolor=self["background"],
         )
+
+        self.tag_configure(
+            "summary",
+            underline=True
+        )
+
         self.tag_configure(
             "pre",
             font=fixed_font,
