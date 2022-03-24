@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="thonny-lahendus",
-    version="3.3.4",
+    version="3.3.5",
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
     description="Thonny plugin for lahendus.ut.ee",

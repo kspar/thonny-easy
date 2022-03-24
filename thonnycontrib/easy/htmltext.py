@@ -25,6 +25,10 @@ def get_ul_li_marker(depth):
     return options[depth % len(options)] + NBSP
 
 
+def get_ol_li_marker(depth, order):
+    return (str(order) if depth % 2 == 0 else chr(96 + order)) + "." + NBSP
+
+
 class HtmlText(tktextext.TweakableText):
     def __init__(self, master, renderer_class, link_and_form_handler, image_requester, read_only=False, **kw):
 
@@ -240,7 +244,8 @@ class HtmlRenderer(HTMLParser):
                 self._append_text(get_ul_li_marker(max(0, self._active_lists.count("ul") - 1)))
             elif self._active_lists[-1] == "ol":
                 self._active_ol_item_counts[-1] += 1
-                self._append_text("%d.%s" % (self._active_ol_item_counts[-1], NBSP))
+                # Set correct li symbol based on the level. Correct for Python indexing
+                self._append_text(get_ol_li_marker(self._active_lists.count("ol") - 1, self._active_ol_item_counts[-1]))
         elif tag == "img":
             if "src" in attrs:
                 self._append_image(attrs["src"])
