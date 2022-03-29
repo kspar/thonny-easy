@@ -21,7 +21,7 @@ def get_ul_li_marker(depth):
     """
     Previous: UL_LI_MARKER = "•" + NBSP
     """
-    options = ["•", "◦", "▹"]
+    options = ["-", ">", "*"]
     return options[depth % len(options)] + NBSP
 
 
