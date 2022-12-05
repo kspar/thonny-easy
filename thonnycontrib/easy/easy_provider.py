@@ -168,7 +168,8 @@ class EasyExerciseProvider(ExerciseProvider):
         return self._get_ex_description(course_id, exercise_id)
 
     def _breadcrumb_exercises(self, course_id: str) -> Tuple[str, str]:
-        return f"/student/courses/{course_id}/exercises/", self.easy.common.get_course_basic_info(course_id).title
+        basic_info = self.easy.common.get_course_basic_info(course_id)
+        return f"/student/courses/{course_id}/exercises/", basic_info.title if basic_info.alias is None else basic_info.alias
 
     @staticmethod
     def _breadcrumb_courses() -> Tuple[str, str]:

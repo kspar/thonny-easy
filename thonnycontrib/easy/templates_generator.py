@@ -27,7 +27,7 @@ def generate_exercise_list_html(base_url, exercises):
 
 
 def generate_course_list_html(courses):
-    course_lst = [f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"]}</a></li>' for c in courses]
+    course_lst = [f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"] if c.get("alias", None) is None else c["alias"]}</a></li>' for c in courses]
     if len(course_lst) == 0:
         return "<div>Sind ei ole veel ühelegi kursusele lisatud.</div>"
     else:
