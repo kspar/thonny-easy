@@ -15,7 +15,7 @@ setuptools.setup(
     packages=setuptools.find_namespace_packages(),
     install_requires=[
         'easy-py>=0.5.3',
-        'thonny>=3.2.7',
+        'thonny>=4.1.2',
         'pillow>=8.0',
         'chevron>=0.13.1',
         'requests>=2.27.1'
