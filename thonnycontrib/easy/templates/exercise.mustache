@@ -8,35 +8,40 @@
 <br/>
 <hr>
 
-{{#grade_auto}}
-    <h2>Automaatne hinnang</h2>
-    <div>Automaatne hinne: {{grade_auto}}/100</div>
+{{#solution}}
+    <h2>Viimane esitus</h2>
     <br/>
-    <pre><code>{{feedback_auto}}</code></pre>
-    <br/>
-{{/grade_auto}}
+    <pre><code>{{solution}}</code></pre>
+{{/solution}}
 
-{{#latest_grade_teacher}}
-    <h2>Õpetaja hinnang</h2>
-    <div>Hinne: {{latest_grade_teacher}}/100</div>
+{{#is_open}}
+    <h2>Esitamine</h2>
+    <form action="/student/courses/{{course_id}}/exercises/{{exercise_id}}/submissions">
+        <input type="hidden" name="{{EDITOR_CONTENT_NAME}}"/>
+        <input type="submit" value="Esita aktiivse redaktori sisu"/>
+    </form>
+{{/is_open}}
+
+{{#not_open}}
+    <h2>Esitamine</h2>
+    <div>See ülesanne on suletud ja ei luba enam uusi esitusi</div>
+{{/not_open}}
+
+{{#points}}
+    <h2>Punktid</h2>
+    <div>{{points}}/100 {{feedback_type}}</div>
     <br/>
-{{/latest_grade_teacher}}
+{{/points}}
 
 {{#latest_feedback_teacher}}
+    <h2>Õpetaja kommentaar</h2>
     <div>{{latest_feedback_teacher}}</div>
     <br/>
 {{/latest_feedback_teacher}}
 
 
-{{#solution}}
-    <h2>Viimane esitus</h2>
+{{#feedback_auto}}
+    <h2>Automaatsed testid</h2>
+    <pre><code>{{feedback_auto}}</code></pre>
     <br/>
-    <pre><code>{{solution}}</code></pre>
-    <br/>
-    <br/>
-{{/solution}}
-
-<form action="/student/courses/{{course_id}}/exercises/{{exercise_id}}/submissions">
-    <input type="hidden" name="{{EDITOR_CONTENT_NAME}}"/>
-    <input type="submit" value="Esita aktiivse redaktori sisu"/>
-</form>
+{{/feedback_auto}}
