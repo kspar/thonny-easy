@@ -17,12 +17,23 @@ class DemoExercisesView(ExercisesView):
 
 def load_plugin():
     import logging
-    import os.path
     import platform
     import datetime
+    import configparser
+    import os
+
     path = os.path.join(THONNY_USER_DIR, "lahendus")
     os.makedirs(path, exist_ok=True)
     log_file = os.path.join(path, datetime.datetime.now().strftime("%Y-%m-%d") + ".lahendus.log")
+
+    # config
+    config = configparser.ConfigParser()
+    config.set('DEFAULT', 'lang', "et")
+    config_location = os.path.join(path, 'lahendus.ini')
+
+    if not os.path.exists(config_location):
+        with open(config_location, 'w') as configfile:
+            config.write(configfile)
 
     file_handler = logging.FileHandler(log_file, encoding="UTF-8", mode="a")
     file_handler.setFormatter(logging.Formatter("%(asctime)s;%(levelname)s;%(message)s"))

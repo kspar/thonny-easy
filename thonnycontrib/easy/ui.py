@@ -174,7 +174,7 @@ class ExercisesView(ttk.Frame):
 
         self._page_future = self._executor.submit(
             self._provider.get_html_and_breadcrumbs, url, form_data)
-        self._set_page_html("<p>Palun oota...</p>")
+        self._set_page_html("<p>⌛...</p>")
 
     def _set_page_html(self, html):
         self._html_widget.set_html_content(html)

@@ -1,3 +1,4 @@
+import configparser
 import logging
 import re
 import time
@@ -6,6 +7,7 @@ from typing import Tuple, List, Union, Callable
 import pkg_resources
 import requests
 from easy import Ez, AuthRequiredException, decode_token, ErrorResponseException
+from thonny import THONNY_USER_DIR
 
 from .templates_generator import *
 from .ui import ExerciseProvider, FormData, EDITOR_CONTENT_NAME
@@ -15,6 +17,9 @@ ROOT_PATH = "/"
 HOME = [(ROOT_PATH, "Lahendus")]
 LOGOUT_PATH = "/logout"
 AUTH_PATH = "/auth"
+LANG_PATH = "/lang"
+
+conf_file_path = os.path.join(os.path.join(THONNY_USER_DIR, "lahendus"), "lahendus.ini")
 
 EXERCISE_LIST_RE = re.compile(r"^/student/courses/([0-9]+)/exercises/$")
 EXERCISE_DESCRIPTION_RE = re.compile(r"^/student/courses/([0-9]+)/exercises/([0-9]+)$")
@@ -26,9 +31,9 @@ PRODUCTION = True
 logger = logging.getLogger(__name__)
 
 
-def _get_easy():
-    auth_browser_success_msg = "Autentimine õnnestus! Võid nüüd selle lehe sulgeda."
-    auth_browser_fail_msg = "Midagi läks ootamatult valesti. Palun proovi uuesti."
+def _get_easy(lang):
+    auth_browser_success_msg = "Autentimine õnnestus! Võid nüüd selle lehe sulgeda." if lang == "et" else "Authentication succeeded! You can now close this page."
+    auth_browser_fail_msg = "Midagi läks ootamatult valesti. Palun proovi uuesti." if lang == "et" else "Something went unexpectedly wrong. Please try again."
 
     if PRODUCTION:
         return Ez("ems.lahendus.ut.ee",
@@ -47,16 +52,29 @@ def _get_easy():
 # noinspection DuplicatedCode
 class EasyExerciseProvider(ExerciseProvider):
     def __init__(self, exercises_view):
+        config = configparser.ConfigParser()
+        config.read(conf_file_path)
+        try:
+            lang = config.get("DEFAULT", "lang")
+            if not (lang in ["et", "en"]):
+                logger.error(f"Configuration file has unknown locale '{lang}', falling back to 'et'")
+                lang = "et"
+        except configparser.NoOptionError:
+            logger.error(f"Configuration file does not have 'DEFAULT - lang', falling back to 'et'")
+            lang = "et"
+
         self.exercises_view = exercises_view
-        self.easy = _get_easy()
+        self.easy = _get_easy(lang)
         self.last_update_check = None
+        self.config = config
+        self.lang = lang
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         logger.info(f"User query: '{url}'. Form data: '{form_data}'.")
         try:
             if self._update_required():
                 logger.info(f"Plug-in update required from user: {self._get_versions()}")
-                return generate_update_html(self._get_versions()), HOME
+                return generate_update_html(self._get_versions(), self.lang), HOME
 
             if url == AUTH_PATH:
                 if self.easy.is_auth_required():
@@ -95,7 +113,17 @@ class EasyExerciseProvider(ExerciseProvider):
             elif url == LOGOUT_PATH:
                 self.log_match("LOGOUT_PATH", url, form_data)
                 self._logout()
-                return "<p>Nägemist!</p>", HOME
+                return ("<p>Nägemist!</p>", HOME) if self.lang == "et" else ("<p>Goodbye!</p>", HOME)
+
+            elif url == LANG_PATH:
+                self.lang = "en" if self.lang == "et" else "et"
+
+                self.config.set('DEFAULT', 'lang', self.lang)
+                with open(conf_file_path, 'w') as configfile:
+                    self.config.write(configfile)
+
+                self.log_match("LANG", url, form_data)
+                return self._show_course_list()
             else:
                 self.log_match("COURSE_LIST", url, form_data)
                 return self._show_course_list()
@@ -111,7 +139,7 @@ class EasyExerciseProvider(ExerciseProvider):
                 return generate_error_auth(), HOME
 
             logger.info("Auth required, returning auth page.")
-            return generate_login_html(url), HOME
+            return generate_login_html(url, self.lang), HOME
 
         except Exception as e:
             self.log_match("Exception", url, form_data)
@@ -126,7 +154,7 @@ class EasyExerciseProvider(ExerciseProvider):
     def _logout(self):
         self.easy.logout_in_browser()
         self.easy.shutdown()
-        self.easy = _get_easy()
+        self.easy = _get_easy(self.lang)
 
     def _authenticate(self):
         self.easy.start_auth_in_browser()
@@ -138,7 +166,7 @@ class EasyExerciseProvider(ExerciseProvider):
 
     def _show_course_list(self):
         courses = self.easy.student.get_courses().courses
-        return generate_course_list_html(courses), [self._breadcrumb_courses()]
+        return generate_course_list_html(courses, self.lang), [self._breadcrumb_courses()]
 
     def _show_exercise_description(self, match):
         course_id, ex_id = match.group(1), match.group(2)
@@ -149,19 +177,20 @@ class EasyExerciseProvider(ExerciseProvider):
         return self._get_ex_list(course_id)
 
     def _get_course_list(self):
-        return generate_course_list_html(self.easy.student.get_courses().courses), [self._breadcrumb_courses()]
+        return generate_course_list_html(self.easy.student.get_courses().courses, self.lang), [
+            self._breadcrumb_courses()]
 
     def _get_ex_list(self, course_id: str):
         exercises = self.easy.student.get_course_exercises(course_id).exercises
         breadcrumb_ex_list = self._breadcrumb_exercises(course_id)
-        html = generate_exercise_list_html(breadcrumb_ex_list[0], exercises)
+        html = generate_exercise_list_html(breadcrumb_ex_list[0], exercises, self.lang)
         return html, [self._breadcrumb_courses(), breadcrumb_ex_list]
 
     def _get_ex_description(self, course_id: str, exercise_id: str):
         details = self.easy.student.get_exercise_details(course_id, exercise_id)
         breadcrumb_this = (f"/student/courses/{course_id}/exercises/{exercise_id}", details.effective_title)
         breadcrumbs = [self._breadcrumb_courses(), self._breadcrumb_exercises(course_id), breadcrumb_this]
-        return generate_exercise_html(self, course_id, exercise_id), breadcrumbs
+        return generate_exercise_html(self, course_id, exercise_id, self.lang), breadcrumbs
 
     def _submit_solution(self, course_id: str, exercise_id: str, form_data):
         self.easy.student.post_submission(course_id, exercise_id, form_data.get(EDITOR_CONTENT_NAME))
@@ -171,12 +200,13 @@ class EasyExerciseProvider(ExerciseProvider):
         basic_info = self.easy.common.get_course_basic_info(course_id)
         return f"/student/courses/{course_id}/exercises/", basic_info.title if basic_info.alias is None else basic_info.alias
 
-    @staticmethod
-    def _breadcrumb_courses() -> Tuple[str, str]:
-        return f"/student/courses/", "Kursused"
+    def _breadcrumb_courses(self) -> Tuple[str, str]:
+        return f"/student/courses/", "Kursused" if self.lang == "et" else "Courses"
 
     def get_menu_items(self) -> List[Tuple[str, Union[str, Callable, None]]]:
-        return [("Logi sisse", AUTH_PATH) if self.easy.is_auth_required() else ("Logi välja", LOGOUT_PATH)]
+        log_in_title = "Logi sisse" if self.lang == "et" else "Login"
+        log_out_title = "Logi välja" if self.lang == "et" else "Logout"
+        return [(log_in_title, AUTH_PATH) if self.easy.is_auth_required() else (log_out_title, LOGOUT_PATH), ("🌐", LANG_PATH)]
 
     @staticmethod
     def _get_versions():

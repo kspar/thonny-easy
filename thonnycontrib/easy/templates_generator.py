@@ -15,42 +15,58 @@ def render(template_name: str, data: Dict) -> str:
         return chevron.render(f, data)
 
 
-def generate_update_html(versions):
-    return render("update.mustache", versions)
+def generate_update_html(versions, lang="et"):
+    return render("update_et.mustache"  if lang == "et" else "update_en.mustache", versions)
 
-
-def generate_exercise_list_html(base_url, exercises):
+def generate_exercise_list_html(base_url, exercises, lang="et"):
     ex_list = [f'<li><a href="{base_url}{e["id"]}">{e["effective_title"]}</a></li>' for e in exercises]
     if len(ex_list) == 0:
-        return "<div>Siia kursusele ei ole veel ülesandeid lisatud.</div>"
+        if lang == "et":
+            return "<div>Siia kursusele ei ole veel ülesandeid lisatud.</div>"
+        else:
+            return "<div>No assignments have been added to this course yet.</div>"
     else:
         return f"<ul>{''.join(ex_list)}</ul>"
 
 
-def generate_course_list_html(courses):
+def generate_course_list_html(courses, lang="et"):
     course_lst = [
         f'<li><a href="/student/courses/{c["id"]}/exercises/">{c["title"] if c.get("alias", None) is None else c["alias"]}</a></li>'
         for c in courses]
     if len(course_lst) == 0:
-        return "<div>Sind ei ole veel ühelegi kursusele lisatud.</div>"
+        if lang == "et":
+            return "<div>Sind ei ole veel ühelegi kursusele lisatud.</div>"
+        else:
+            return "<div>You have not been added to any courses yet.</div>"
     else:
         return f"<ul>{''.join(course_lst)}</ul>"
 
 
-def generate_role_not_allowed_html():
-    return "<div>Sul puudub õpilase roll, mis on vajalik plugina kasutamiseks.</div>"
+def generate_role_not_allowed_html(lang="et"):
+    if lang == "et":
+        return "<div>Sul puudub õpilase roll, mis on vajalik plugina kasutamiseks.</div>"
+    else:
+        return "<div>You lack the student role required for using the plugin.</div>"
 
 
-def generate_login_html(from_url) -> str:
-    return render("authenticate.mustache", {"from_url": "/" if from_url is None else from_url})
+def generate_login_html(from_url, lang="et") -> str:
+    return render("authenticate.mustache",
+                  {"from_url": "/" if from_url is None else from_url,
+                   "button": "Ava sisse logimiseks veebilehitseja" if lang == "et" else "Open a web browser to log in" })
 
 
-def generate_error_html(error_msg) -> str:
-    return f"<h1>Viga!</h1><div>{error_msg}</div>"
+def generate_error_html(error_msg, lang="et") -> str:
+    if lang == "et":
+        return f"<h1>Viga!</h1><div>{error_msg}</div>"
+    else:
+        return f"<h1>Error!</h1><div>{error_msg}</div>"
 
 
-def generate_error_auth() -> str:
-    return f"""<h1>Autentimine ebaõnnestus!</h1><a href="/auth">Alusta autentimist uuesti</a>"""
+def generate_error_auth(lang="et") -> str:
+    if lang == "et":
+        return f"""<h1>Autentimine ebaõnnestus!</h1><a href="/auth">Alusta autentimist uuesti</a>"""
+    else:
+        return f"""<h1>Authentication Failed!</h1><a href='/auth'>Start authentication again</a>"""
 
 
 def _convert_to_str(value):
@@ -59,10 +75,12 @@ def _convert_to_str(value):
     else:
         return str(value)
 
+
 def _status(status):
     return status.replace('FAIL', '❌').replace('PASS', '✔')
 
-def _process_test(test):
+
+def _process_test(test, locale_dict):
     try:
         title, status = test['title'], _status(test['status'])
         user_inputs, actual_output = test['user_inputs'], test['actual_output']
@@ -70,17 +88,16 @@ def _process_test(test):
         checks = [f"{(_status(check['status']))}:{check['feedback']}" for check in test["checks"]]
         checks = "\n  ".join(checks)
 
-
         if len(user_inputs) == 0:
             user_inputs = ""
         else:
             user_inputs = "\n    ".join(user_inputs)
-            user_inputs =  f"  Andsin programmile sisendid: \n    {user_inputs}\n"
+            user_inputs = f"  {locale_dict['GAVE_INPUTS']}: \n    {user_inputs}\n"
 
         if actual_output is None:
             actual_output = ""
         else:
-            actual_output = f"  Programmi täielik väljund oli:\n    {actual_output}\n"
+            actual_output = f"  {locale_dict['OUTPUT_WAS']}:\n    {actual_output}\n"
 
         result = (
             f"{status}:{title}\n"
@@ -94,7 +111,33 @@ def _process_test(test):
     return result
 
 
-def generate_exercise_html(provider, course_id, exercise_id) -> str:
+def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
+    strings_en = {"CLOSED_DENIED_INFO": "This task is closed and will no longer allow new submissions",
+                  "POINTS_TITLE": "Points",
+                  "SUBMITTING_TITLE": "Submit",
+                  "SUBMIT_ACTIVE": "Submit the contents of the active editor",
+                  "TEACHER_COMMENT": "Teacher comment",
+                  "AUTOMATIC_TESTS": "Automated tests",
+                  "LAST_SUBMISSION": "Last submission",
+                  "SEE_IN_LAHENDUS": "See the task in Lahendus",
+                  "GAVE_INPUTS": "Gave inputs to the program",
+                  "OUTPUT_WAS": "The complete output of the program was"
+                  }
+
+    strings_et = {"CLOSED_DENIED_INFO": "See ülesanne on suletud ja ei luba enam uusi esitusi",
+                  "SUBMITTING_TITLE": "Esitamine",
+                  "POINTS_TITLE": "Punktid",
+                  "SUBMIT_ACTIVE": "Esita aktiivse redaktori sisu",
+                  "TEACHER_COMMENT": "Õpetaja kommentaar",
+                  "AUTOMATIC_TESTS": "Automaatsed testid",
+                  "LAST_SUBMISSION": "Viimane esitus",
+                  "SEE_IN_LAHENDUS": "Vaata ülesannet Lahenduses",
+                  "GAVE_INPUTS": "Andsin programmile sisendid",
+                  "OUTPUT_WAS": "Programmi täielik väljund oli",
+                  }
+
+    strings = strings_et if lang == "et" else strings_en
+
     def has_submissions() -> bool:
         return len(provider.easy.student.get_all_submissions(course_id, exercise_id).submissions) > 0
 
@@ -109,7 +152,7 @@ def generate_exercise_html(provider, course_id, exercise_id) -> str:
             result_type = js["result_type"]
 
             if result_type == "OK_V3":
-                test_results = [_process_test(test) for test in js["tests"]]
+                test_results = [_process_test(test, strings) for test in js["tests"]]
                 feedback_auto = '\n'.join(test_results)
                 grade_auto = _convert_to_str(js["points"])
 
@@ -146,4 +189,4 @@ def generate_exercise_html(provider, course_id, exercise_id) -> str:
                                         "exercise_id": exercise_id,
                                         "latest_feedback_teacher": latest.feedback_teacher,
                                         "latest_grade_teacher": _convert_to_str(latest.grade_teacher),
-                                        "provider_url": provider.easy.util.idp_client_name})
+                                        "provider_url": provider.easy.util.idp_client_name} | strings)
