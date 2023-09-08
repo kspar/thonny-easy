@@ -206,7 +206,8 @@ class EasyExerciseProvider(ExerciseProvider):
     def get_menu_items(self) -> List[Tuple[str, Union[str, Callable, None]]]:
         log_in_title = "Logi sisse" if self.lang == "et" else "Login"
         log_out_title = "Logi välja" if self.lang == "et" else "Logout"
-        return [(log_in_title, AUTH_PATH) if self.easy.is_auth_required() else (log_out_title, LOGOUT_PATH), ("🌐", LANG_PATH)]
+        lang_title = "Eesti keeles" if self.lang == "en" else "In English"
+        return [(log_in_title, AUTH_PATH) if self.easy.is_auth_required() else (log_out_title, LOGOUT_PATH), (lang_title, LANG_PATH)]
 
     @staticmethod
     def _get_versions():

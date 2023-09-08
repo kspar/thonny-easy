@@ -85,7 +85,7 @@ def _process_test(test, locale_dict):
         title, status = test['title'], _status(test['status'])
         user_inputs, actual_output = test['user_inputs'], test['actual_output']
 
-        checks = [f"{(_status(check['status']))}:{check['feedback']}" for check in test["checks"]]
+        checks = [f"{(_status(check['status']))}: {check['feedback']}" for check in test["checks"]]
         checks = "\n  ".join(checks)
 
         if len(user_inputs) == 0:
@@ -97,10 +97,11 @@ def _process_test(test, locale_dict):
         if actual_output is None:
             actual_output = ""
         else:
-            actual_output = f"  {locale_dict['OUTPUT_WAS']}:\n    {actual_output}\n"
+            formatted = "\n    ".join(actual_output.split("\n"))
+            actual_output = f"  {locale_dict['OUTPUT_WAS']}:\n    {formatted}\n"
 
         result = (
-            f"{status}:{title}\n"
+            f"{status}: {title}\n"
             f"  {checks}\n"
             f"{user_inputs}"
             f"{actual_output}"
@@ -112,16 +113,16 @@ def _process_test(test, locale_dict):
 
 
 def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
-    strings_en = {"CLOSED_DENIED_INFO": "This task is closed and will no longer allow new submissions",
+    strings_en = {"CLOSED_DENIED_INFO": "This exercise is closed and does not allow any new submissions",
                   "POINTS_TITLE": "Points",
                   "SUBMITTING_TITLE": "Submit",
                   "SUBMIT_ACTIVE": "Submit the contents of the active editor",
-                  "TEACHER_COMMENT": "Teacher comment",
+                  "TEACHER_COMMENT": "Teacher feedback",
                   "AUTOMATIC_TESTS": "Automated tests",
-                  "LAST_SUBMISSION": "Last submission",
+                  "LAST_SUBMISSION": "Latest submission",
                   "SEE_IN_LAHENDUS": "See the task in Lahendus",
-                  "GAVE_INPUTS": "Gave inputs to the program",
-                  "OUTPUT_WAS": "The complete output of the program was"
+                  "GAVE_INPUTS": "Inputs provided to the program",
+                  "OUTPUT_WAS": "The program's full output"
                   }
 
     strings_et = {"CLOSED_DENIED_INFO": "See ülesanne on suletud ja ei luba enam uusi esitusi",
@@ -171,7 +172,7 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
         grade_auto = _convert_to_str(latest.grade_auto)
 
     if _convert_to_str(latest.grade_teacher) is None:
-        points, feedback_type = (grade_auto, "⚙")
+        points, feedback_type = (grade_auto, "")
     else:
         points, feedback_type = (_convert_to_str(latest.grade_teacher), "🙎")
 

@@ -19,10 +19,12 @@
         <input type="hidden" name="{{EDITOR_CONTENT_NAME}}"/>
         <input type="submit" value="{{SUBMIT_ACTIVE}}"/>
     </form>
+    <br/>
 {{/is_open}}
 
 {{#not_open}}
     <div>{{CLOSED_DENIED_INFO}}</div>
+    <br/>
 {{/not_open}}
 
 {{#points}}
@@ -36,7 +38,6 @@
     <div>{{latest_feedback_teacher}}</div>
     <br/>
 {{/latest_feedback_teacher}}
-
 
 {{#feedback_auto}}
     <h2>{{AUTOMATIC_TESTS}}</h2>
