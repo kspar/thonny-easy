@@ -94,15 +94,22 @@ def _process_test(test, locale_dict):
             user_inputs = "\n    ".join(user_inputs)
             user_inputs = f"  {locale_dict['GAVE_INPUTS']}: \n    {user_inputs}\n"
 
-        if actual_output is None:
+        if actual_output is None or len(actual_output) == 0:
             actual_output = ""
         else:
             formatted = "\n    ".join(actual_output.split("\n"))
             actual_output = f"  {locale_dict['OUTPUT_WAS']}:\n    {formatted}\n"
 
+        if test['exception_message'] is None:
+            exception = ''
+        else:
+            msg = "  " + test['exception_message'].replace("\n","\n  ")
+            exception = f"  {locale_dict['EXCEPTION']}:\n\n{msg}\n"
+
         result = (
             f"{status}: {title}\n"
             f"  {checks}\n"
+            f"{exception}"
             f"{user_inputs}"
             f"{actual_output}"
         )
@@ -122,7 +129,8 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "LAST_SUBMISSION": "Latest submission",
                   "SEE_IN_LAHENDUS": "See the task in Lahendus",
                   "GAVE_INPUTS": "Inputs provided to the program",
-                  "OUTPUT_WAS": "The program's full output"
+                  "OUTPUT_WAS": "The program's full output",
+                  "EXCEPTION": "There was an exception during the program's execution"
                   }
 
     strings_et = {"CLOSED_DENIED_INFO": "See ülesanne on suletud ja ei luba enam uusi esitusi",
@@ -135,6 +143,7 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "SEE_IN_LAHENDUS": "Vaata ülesannet Lahenduses",
                   "GAVE_INPUTS": "Andsin programmile sisendid",
                   "OUTPUT_WAS": "Programmi täielik väljund oli",
+                  "EXCEPTION": "Programmi käivitamisel tekkis viga"
                   }
 
     strings = strings_et if lang == "et" else strings_en
