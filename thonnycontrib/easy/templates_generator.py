@@ -103,7 +103,7 @@ def _process_test(test, locale_dict):
         if test['exception_message'] is None:
             exception = ''
         else:
-            msg = "  " + test['exception_message'].replace("\n","\n  ")
+            msg = "    " + test['exception_message'].replace("\n","\n    ")
             exception = f"  {locale_dict['EXCEPTION']}:\n\n{msg}\n"
 
         result = (
