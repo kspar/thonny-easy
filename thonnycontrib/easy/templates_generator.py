@@ -106,11 +106,22 @@ def _process_test(test, locale_dict):
             msg = "    " + test['exception_message'].replace("\n","\n    ")
             exception = f"  {locale_dict['EXCEPTION']}:\n\n{msg}\n"
 
+
+        if test['created_files'] is None or len(test['created_files']) == 0:
+            created_files = ""
+        else:
+            files = [(x['name'], x['content']) for x in test['created_files']]
+            files = ["    ---" + name + "---\n" + content for (name, content) in files]
+            files = [content.replace("\n","\n    ") for content in files]
+            files = "  \n\n".join(files)
+            created_files = f"  {locale_dict['CREATED_FILES']}:\n\n{files}\n\n"
+
         result = (
             f"{status}: {title}\n"
             f"  {checks}\n"
             f"{exception}"
             f"{user_inputs}"
+            f"{created_files}"
             f"{actual_output}"
         )
     except KeyError:
@@ -130,7 +141,8 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "SEE_IN_LAHENDUS": "See the task in Lahendus",
                   "GAVE_INPUTS": "Inputs provided to the program",
                   "OUTPUT_WAS": "The program's full output",
-                  "EXCEPTION": "There was an exception during the program's execution"
+                  "EXCEPTION": "There was an exception during the program's execution",
+                  "CREATED_FILES" : "Before running the program, the following files were created"
                   }
 
     strings_et = {"CLOSED_DENIED_INFO": "See ülesanne on suletud ja ei luba enam uusi esitusi",
@@ -143,7 +155,8 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "SEE_IN_LAHENDUS": "Vaata ülesannet Lahenduses",
                   "GAVE_INPUTS": "Andsin programmile sisendid",
                   "OUTPUT_WAS": "Programmi täielik väljund oli",
-                  "EXCEPTION": "Programmi käivitamisel tekkis viga"
+                  "EXCEPTION": "Programmi käivitamisel tekkis viga",
+                  "CREATED_FILES":"Enne programmi käivitamist lõin failid"
                   }
 
     strings = strings_et if lang == "et" else strings_en
