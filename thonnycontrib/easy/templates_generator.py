@@ -153,9 +153,13 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
             result_type = js["result_type"]
 
             if result_type == "OK_V3":
-                test_results = [_process_test(test, strings) for test in js["tests"]]
-                feedback_auto = '\n'.join(test_results)
-                grade_auto = _convert_to_str(js["points"])
+                if js["pre_evaluate_error"] is None:
+                    test_results = [_process_test(test, strings) for test in js["tests"]]
+                    feedback_auto = '\n'.join(test_results)
+                    grade_auto = _convert_to_str(js["points"])
+                else:
+                    feedback_auto = js["pre_evaluate_error"]
+                    grade_auto = _convert_to_str(js["points"])
 
             elif result_type == "OK_LEGACY":
                 feedback_auto = js["feedback"]
