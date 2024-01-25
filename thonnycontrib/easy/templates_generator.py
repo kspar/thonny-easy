@@ -3,7 +3,6 @@ import os
 from typing import Dict
 
 import chevron
-from easy import SubmissionResp
 
 from thonnycontrib.easy.ui import EDITOR_CONTENT_NAME
 
@@ -16,7 +15,8 @@ def render(template_name: str, data: Dict) -> str:
 
 
 def generate_update_html(versions, lang="et"):
-    return render("update_et.mustache"  if lang == "et" else "update_en.mustache", versions)
+    return render("update_et.mustache" if lang == "et" else "update_en.mustache", versions)
+
 
 def generate_exercise_list_html(base_url, exercises, lang="et"):
     ex_list = [f'<li><a href="{base_url}{e["id"]}">{e["effective_title"]}</a></li>' for e in exercises]
@@ -52,7 +52,7 @@ def generate_role_not_allowed_html(lang="et"):
 def generate_login_html(from_url, lang="et") -> str:
     return render("authenticate.mustache",
                   {"from_url": "/" if from_url is None else from_url,
-                   "button": "Ava sisse logimiseks veebilehitseja" if lang == "et" else "Open a web browser to log in" })
+                   "button": "Ava sisse logimiseks veebilehitseja" if lang == "et" else "Open a web browser to log in"})
 
 
 def generate_error_html(error_msg, lang="et") -> str:
@@ -103,16 +103,15 @@ def _process_test(test, locale_dict):
         if test['exception_message'] is None:
             exception = ''
         else:
-            msg = "    " + test['exception_message'].replace("\n","\n    ")
+            msg = "    " + test['exception_message'].replace("\n", "\n    ")
             exception = f"  {locale_dict['EXCEPTION']}:\n\n{msg}\n"
-
 
         if test['created_files'] is None or len(test['created_files']) == 0:
             created_files = ""
         else:
             files = [(x['name'], x['content']) for x in test['created_files']]
             files = ["    ---" + name + "---\n" + content for (name, content) in files]
-            files = [content.replace("\n","\n    ") for content in files]
+            files = [content.replace("\n", "\n    ") for content in files]
             files = "  \n\n".join(files)
             created_files = f"  {locale_dict['CREATED_FILES']}:\n\n{files}\n\n"
 
@@ -142,7 +141,7 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "GAVE_INPUTS": "Inputs provided to the program",
                   "OUTPUT_WAS": "The program's full output",
                   "EXCEPTION": "There was an exception during the program's execution",
-                  "CREATED_FILES" : "Before running the program, the following files were created"
+                  "CREATED_FILES": "Before running the program, the following files were created"
                   }
 
     strings_et = {"CLOSED_DENIED_INFO": "See ülesanne on suletud ja ei luba enam uusi esitusi",
@@ -156,64 +155,78 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "GAVE_INPUTS": "Andsin programmile sisendid",
                   "OUTPUT_WAS": "Programmi täielik väljund oli",
                   "EXCEPTION": "Programmi käivitamisel tekkis viga",
-                  "CREATED_FILES":"Enne programmi käivitamist lõin failid"
+                  "CREATED_FILES": "Enne programmi käivitamist lõin failid"
                   }
 
     strings = strings_et if lang == "et" else strings_en
 
+    details = provider.easy.student.get_exercise_details(course_id, exercise_id)
+
     def has_submissions() -> bool:
         return len(provider.easy.student.get_all_submissions(course_id, exercise_id).submissions) > 0
 
-    if has_submissions():
-        latest = provider.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
+    if not has_submissions():
+        return render("exercise.mustache", {"effective_title": details.effective_title,
+                                            "text_html": details.text_html,
+                                            "is_open": details.is_open,
+                                            "not_open": not details.is_open,
+                                            "points": None,
+                                            "feedback_type": None,
+                                            "feedback_auto": None,
+                                            "solution": None,
+                                            "EDITOR_CONTENT_NAME": EDITOR_CONTENT_NAME,
+                                            "course_id": course_id,
+                                            "exercise_id": exercise_id,
+                                            "latest_feedback_teacher": None,
+                                            "latest_grade_teacher": None,
+                                            "provider_url": provider.easy.util.idp_client_name} | strings)
     else:
-        latest = SubmissionResp()
+        latest = provider.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
 
-    try:
-        js = json.loads(latest.feedback_auto)
-        if "result_type" in js:
-            result_type = js["result_type"]
+        try:
+            js = json.loads(latest.feedback_auto)
+            if "result_type" in js:
+                result_type = js["result_type"]
 
-            if result_type == "OK_V3":
-                if js["pre_evaluate_error"] is None:
-                    test_results = [_process_test(test, strings) for test in js["tests"]]
-                    feedback_auto = '\n'.join(test_results)
+                if result_type == "OK_V3":
+                    if js["pre_evaluate_error"] is None:
+                        test_results = [_process_test(test, strings) for test in js["tests"]]
+                        feedback_auto = '\n'.join(test_results)
+                        grade_auto = _convert_to_str(js["points"])
+                    else:
+                        feedback_auto = js["pre_evaluate_error"]
+                        grade_auto = _convert_to_str(js["points"])
+
+                elif result_type == "OK_LEGACY":
+                    feedback_auto = js["feedback"]
                     grade_auto = _convert_to_str(js["points"])
-                else:
-                    feedback_auto = js["pre_evaluate_error"]
-                    grade_auto = _convert_to_str(js["points"])
 
-            elif result_type == "OK_LEGACY":
-                feedback_auto = js["feedback"]
-                grade_auto = _convert_to_str(js["points"])
-
-            elif result_type == "ERROR_V3":
-                feedback_auto = js["error"]
-                grade_auto = "-"
-        else:
+                elif result_type == "ERROR_V3":
+                    feedback_auto = js["error"]
+                    grade_auto = "-"
+            else:
+                feedback_auto = latest.feedback_auto
+                grade_auto = _convert_to_str(latest.grade_auto)
+        except (ValueError, KeyError, TypeError):
             feedback_auto = latest.feedback_auto
             grade_auto = _convert_to_str(latest.grade_auto)
-    except (ValueError, KeyError, TypeError):
-        feedback_auto = latest.feedback_auto
-        grade_auto = _convert_to_str(latest.grade_auto)
 
-    if _convert_to_str(latest.grade_teacher) is None:
-        points, feedback_type = (grade_auto, "")
-    else:
-        points, feedback_type = (_convert_to_str(latest.grade_teacher), "🙎")
+        if _convert_to_str(latest.grade_teacher) is None:
+            points, feedback_type = grade_auto, ""
+        else:
+            points, feedback_type = _convert_to_str(latest.grade_teacher), "🙎"
 
-    details = provider.easy.student.get_exercise_details(course_id, exercise_id)
-    return render("exercise.mustache", {"effective_title": details.effective_title,
-                                        "text_html": details.text_html,
-                                        "is_open": details.is_open,
-                                        "not_open": not details.is_open,
-                                        "points": points,
-                                        "feedback_type": feedback_type,
-                                        "feedback_auto": feedback_auto,
-                                        "solution": latest.solution,
-                                        "EDITOR_CONTENT_NAME": EDITOR_CONTENT_NAME,
-                                        "course_id": course_id,
-                                        "exercise_id": exercise_id,
-                                        "latest_feedback_teacher": latest.feedback_teacher,
-                                        "latest_grade_teacher": _convert_to_str(latest.grade_teacher),
-                                        "provider_url": provider.easy.util.idp_client_name} | strings)
+        return render("exercise.mustache", {"effective_title": details.effective_title,
+                                            "text_html": details.text_html,
+                                            "is_open": details.is_open,
+                                            "not_open": not details.is_open,
+                                            "points": points,
+                                            "feedback_type": feedback_type,
+                                            "feedback_auto": feedback_auto,
+                                            "solution": latest.solution,
+                                            "EDITOR_CONTENT_NAME": EDITOR_CONTENT_NAME,
+                                            "course_id": course_id,
+                                            "exercise_id": exercise_id,
+                                            "latest_feedback_teacher": latest.feedback_teacher,
+                                            "latest_grade_teacher": _convert_to_str(latest.grade_teacher),
+                                            "provider_url": provider.easy.util.idp_client_name} | strings)
