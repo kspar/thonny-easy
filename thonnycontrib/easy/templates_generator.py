@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from typing import Dict
 
 import chevron
@@ -162,6 +163,42 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
 
     details = provider.easy.student.get_exercise_details(course_id, exercise_id)
 
+    def _format_teacher_activity(ta, lang="et"):
+        if ta is None:
+            ta = {}
+
+        feedback = ta.get("feedback", {})
+        if feedback is None:
+            feedback = {}
+
+        feedback_html = feedback.get("feedback_html", "")
+        grade = ta.get("grade", "")
+        created_at = ta.get("created_at", "")
+        submission_number = ta.get("submission_number", "")
+
+        # Format the date
+        if created_at:
+            try:
+                date_obj = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ')
+                created_at = date_obj.strftime('%d.%m.%Y %H:%M')
+            except ValueError:
+                pass  # In case of a formatting error, leave it as is
+
+        grade_text = f"Punktid: {grade}/100" if lang == "et" else f"Points: {grade}/100"
+        submission_text = f"Esitus # {submission_number}" if lang == "et" else f"Submission # {submission_number}"
+
+        # Create the HTML output
+        html_output = "<ul>\n"
+        if created_at and submission_text:
+            html_output += f"    <li>{created_at} · {submission_text}</li>\n"
+        if feedback_html:
+            html_output += f"    <li>{feedback_html}</li>\n"
+        if grade:
+            html_output += f"    <li>{grade_text}</li>\n"
+        html_output += "</ul>"
+
+        return html_output
+
     def has_submissions() -> bool:
         return len(provider.easy.student.get_all_submissions(course_id, exercise_id).submissions) > 0
 
@@ -178,43 +215,52 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                                             "course_id": course_id,
                                             "exercise_id": exercise_id,
                                             "latest_feedback_teacher": None,
-                                            "latest_grade_teacher": None,
                                             "provider_url": provider.easy.util.idp_client_name} | strings)
     else:
-        latest = provider.easy.student.get_latest_exercise_submission_details(course_id, exercise_id)
+        latest = provider.easy.student.get_all_submissions(course_id, exercise_id).submissions
+        latest = latest[0] if latest is not None else None
 
-        try:
-            js = json.loads(latest.feedback_auto)
-            if "result_type" in js:
-                result_type = js["result_type"]
-
-                if result_type == "OK_V3":
-                    if js["pre_evaluate_error"] is None:
-                        test_results = [_process_test(test, strings) for test in js["tests"]]
-                        feedback_auto = '\n'.join(test_results)
-                        grade_auto = _convert_to_str(js["points"])
-                    else:
-                        feedback_auto = js["pre_evaluate_error"]
-                        grade_auto = _convert_to_str(js["points"])
-
-                elif result_type == "OK_LEGACY":
-                    feedback_auto = js["feedback"]
-                    grade_auto = _convert_to_str(js["points"])
-
-                elif result_type == "ERROR_V3":
-                    feedback_auto = js["error"]
-                    grade_auto = "-"
-            else:
-                feedback_auto = latest.feedback_auto
-                grade_auto = _convert_to_str(latest.grade_auto)
-        except (ValueError, KeyError, TypeError):
-            feedback_auto = latest.feedback_auto
-            grade_auto = _convert_to_str(latest.grade_auto)
-
-        if _convert_to_str(latest.grade_teacher) is None:
-            points, feedback_type = grade_auto, ""
+        # TODO: validate if grade is correct
+        # TODO: validate all possible exception cases.
+        if latest is not None:
+            points = latest.get("grade", {}).get("grade", "")
+            is_autograde = latest.get("grade", {}).get("is_autograde", False)
+            feedback_type = "" if is_autograde else "🙎"
         else:
-            points, feedback_type = _convert_to_str(latest.grade_teacher), "🙎"
+            points = None
+            feedback_type =  ""
+
+        feedback_auto = ""
+
+        if latest is not None and "auto_assessment" in latest:
+            auto_assessment = latest["auto_assessment"]
+            try:
+                js = json.loads(auto_assessment.feedback)
+                if "result_type" in js:
+                    result_type = js["result_type"]
+
+                    if result_type == "OK_V3":
+                        if js["pre_evaluate_error"] is None:
+                            test_results = [_process_test(test, strings) for test in js["tests"]]
+                            feedback_auto = '\n'.join(test_results)
+                        else:
+                            feedback_auto = js["pre_evaluate_error"]
+
+                    elif result_type == "OK_LEGACY":
+                        feedback_auto = js["feedback"]
+
+                    elif result_type == "ERROR_V3":
+                        feedback_auto = js["error"]
+                else:
+                    feedback_auto = auto_assessment.feedback
+            # TODO. are all exceptions still possible?
+            except (ValueError, KeyError, TypeError, AttributeError):
+                feedback_auto = latest.get("auto_assessment",{}).get("feedback","")
+
+
+        activities = provider.easy.student.get_all_exercise_teacher_activities(course_id, exercise_id).teacher_activities
+        teacher_activites = [_format_teacher_activity(ta, lang) for ta in activities] if activities is not None else []
+        teacher_activites = "\n".join(teacher_activites)
 
         return render("exercise.mustache", {"effective_title": details.effective_title,
                                             "text_html": details.text_html,
@@ -223,10 +269,9 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                                             "points": points,
                                             "feedback_type": feedback_type,
                                             "feedback_auto": feedback_auto,
-                                            "solution": latest.solution,
+                                            "solution": latest.get("solution",""),
                                             "EDITOR_CONTENT_NAME": EDITOR_CONTENT_NAME,
                                             "course_id": course_id,
                                             "exercise_id": exercise_id,
-                                            "latest_feedback_teacher": latest.feedback_teacher,
-                                            "latest_grade_teacher": _convert_to_str(latest.grade_teacher),
+                                            "latest_feedback_teacher": teacher_activites,
                                             "provider_url": provider.easy.util.idp_client_name} | strings)
