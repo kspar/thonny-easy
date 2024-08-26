@@ -220,8 +220,7 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
         latest = provider.easy.student.get_all_submissions(course_id, exercise_id).submissions
         latest = latest[0] if latest is not None else None
 
-        # TODO: validate if grade is correct
-        # TODO: validate all possible exception cases.
+        # TODO: refactor
         if latest is not None and latest.get("grade") is not None:
             points = latest.get("grade", {}).get("grade", "")
             is_autograde = latest.get("grade", {}).get("is_autograde", False)
