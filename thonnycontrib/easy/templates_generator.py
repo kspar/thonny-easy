@@ -222,13 +222,13 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
 
         # TODO: validate if grade is correct
         # TODO: validate all possible exception cases.
-        if latest is not None:
+        if latest is not None and latest.get("grade") is not None:
             points = latest.get("grade", {}).get("grade", "")
             is_autograde = latest.get("grade", {}).get("is_autograde", False)
             feedback_type = "" if is_autograde else "🙎"
         else:
             points = None
-            feedback_type =  ""
+            feedback_type = ""
 
         feedback_auto = ""
 
@@ -255,8 +255,10 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                     feedback_auto = auto_assessment.feedback
             # TODO. are all exceptions still possible?
             except (ValueError, KeyError, TypeError, AttributeError):
-                feedback_auto = latest.get("auto_assessment",{}).get("feedback","")
-
+                if latest is not None and latest.get("auto_assessment") is not None:
+                    feedback_auto = latest.get("auto_assessment", {}).get("feedback", "")
+                else:
+                    feedback_auto = ""
 
         activities = provider.easy.student.get_all_exercise_teacher_activities(course_id, exercise_id).teacher_activities
         teacher_activites = [_format_teacher_activity(ta, lang) for ta in activities] if activities is not None else []

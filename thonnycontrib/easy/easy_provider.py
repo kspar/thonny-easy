@@ -143,7 +143,7 @@ class EasyExerciseProvider(ExerciseProvider):
 
         except Exception as e:
             self.log_match("Exception", url, form_data)
-            logger.warning(f"Unexpected error: '{e}'")
+            logger.exception(e, stacklevel=True, exc_info=True)
 
             if isinstance(e, ErrorResponseException):
                 if e.error_resp.code == "ROLE_NOT_ALLOWED":
