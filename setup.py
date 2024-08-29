@@ -8,6 +8,7 @@ setuptools.setup(
     version="8.1.0",
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
+    license="MIT",
     description="Thonny plugin for lahendus.ut.ee",
     long_description=long_description,
     long_description_content_type="text/markdown",
