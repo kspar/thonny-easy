@@ -1,4 +1,4 @@
-easy-py>=0.6.1
+easy-py>=0.7.2
 thonny>=4.1.4
 pillow>=8.0
 chevron>=0.13.1
