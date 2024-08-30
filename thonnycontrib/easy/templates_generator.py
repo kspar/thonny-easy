@@ -193,7 +193,7 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
         if grade == "" or grade is None:
             grade_text = ""
         else:
-            grade_text = f" · Hinne: <b>{grade} / 100</b> " if lang == "et" else f"Grade: <b>{grade} / 100</b> "
+            grade_text = f" · Hinne: <b>{grade} / 100</b> " if lang == "et" else f" · Grade: <b>{grade} / 100</b> "
         submission_text = f"Esitus # {submission_number}" if lang == "et" else f"Submission # {submission_number}"
 
         html_output = f"<br/>    - {teacher} · {created_at} · {submission_text}{grade_text}<br/>"

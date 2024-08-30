@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="thonny-lahendus",
-    version="8.3.0",
+    version="8.3.1",
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
     license="MIT",
