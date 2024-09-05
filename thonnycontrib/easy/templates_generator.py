@@ -226,13 +226,13 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
         grade_resp = latest.get("grade", {})
 
         # Python evals grade 0 to False later in the template. Convert to str
-        points = str(grade_resp.get("grade", None))
+        points = None if grade_resp is None else str(grade_resp.get("grade", None))
 
         if points == "None":
             points = None
 
 
-        is_autograde = grade_resp.get("is_autograde", False)
+        is_autograde = False if grade_resp is None else grade_resp.get("is_autograde", False)
         feedback_type = "" if is_autograde else "🙎"
         feedback_auto = None
 
