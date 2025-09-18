@@ -9,6 +9,7 @@ setuptools.setup(
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
     license="MIT",
+    license_expression="MIT",
     description="Thonny plugin for lahendus.ut.ee",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -26,7 +27,6 @@ setuptools.setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.7',
