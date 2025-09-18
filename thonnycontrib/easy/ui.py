@@ -1,11 +1,12 @@
 import concurrent.futures
+import logging
 import platform
 import tkinter as tk
 import traceback
 from io import BytesIO
 from tkinter import ttk, messagebox
 from typing import Tuple, List, Optional, Callable, Union
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from thonny import tktextext, get_workbench
 from thonny.ui_utils import scrollbar_style, lookup_style_option
@@ -13,6 +14,7 @@ from thonny.ui_utils import scrollbar_style, lookup_style_option
 from .htmltext import FormData, HtmlText, HtmlRenderer
 
 EDITOR_CONTENT_NAME = "$EDITOR_CONTENT"
+logger = logging.getLogger(__name__)
 
 _images_by_urls = {}
 
@@ -135,6 +137,7 @@ class ExercisesView(ttk.Frame):
             get_workbench().open_url(target)
 
     def _on_request_image(self, url):
+        logger.info("Requesting image: %s", url)
         assert url is not None
 
         if url not in self._image_futures:
@@ -191,7 +194,7 @@ class ExercisesView(ttk.Frame):
                 basewidth = 250
                 wpercent = (basewidth / float(pil_img.size[0]))
                 hsize = int((float(pil_img.size[1]) * float(wpercent)))
-                return PhotoImage(pil_img.resize((basewidth, hsize), Image.ANTIALIAS))
+                return PhotoImage(pil_img.resize((basewidth, hsize), Image.Resampling.LANCZOS))
 
         except ImportError:
             return tk.PhotoImage(data=data)
@@ -333,7 +336,14 @@ class ExerciseProvider:
         raise NotImplementedError()
 
     def get_image(self, url) -> bytes:
-        return urlopen(url).read()
+        try:
+            req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urlopen(req) as resp:
+                data = resp.read()
+            return data
+        except Exception as e:
+            logger.exception("Failed to download image %s", url)
+            raise e
 
     def get_max_threads(self) -> int:
         return 10

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="thonny-lahendus",
-    version="9.1.0",
+    version="9.2.0",
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
     license="MIT",
@@ -17,7 +17,7 @@ setuptools.setup(
     install_requires=[
         'easy-py>=0.7.2',
         'thonny>=4.1.4',
-        'pillow>=8.0',
+        'pillow>=11.3.0',
         'chevron>=0.13.1',
         'requests>=2.27.1'
     ],
