@@ -10,13 +10,31 @@ rem not found instead of running anything.
 set "PY=py -3"
 where py >nul 2>&1 || set "PY=python"
 
-rem Files deleted since the last build survive in build\ and get packed into the
-rem next wheel, so start from a clean tree.
-if exist build rmdir /s /q build
-
 %PY% -m build --version >nul 2>&1 || %PY% -m pip install --upgrade build || goto :failed
 
-%PY% -m build --sdist --wheel || goto :failed
+rem Build from a staged copy rather than in place. egg_info fails with
+rem "Access is denied" whenever a file-syncing client, indexer or antivirus is
+rem holding the tree, which the build itself cannot do anything about. Staging
+rem also guarantees that files deleted since the last build cannot reach the
+rem wheel, because build\ and *.egg-info are never copied across.
+
+set "STAGE=%TEMP%\thonny-lahendus-build"
+if exist "%STAGE%" rmdir /s /q "%STAGE%"
+mkdir "%STAGE%" || goto :failed
+
+robocopy . "%STAGE%" /E /NFL /NDL /NJH /NJS /NP /XD build dist .git .idea __pycache__ /XF *.pyc >nul
+if errorlevel 8 goto :failed
+for /d %%D in ("%STAGE%\*.egg-info") do rmdir /s /q "%%D"
+
+pushd "%STAGE%" || goto :failed
+%PY% -m build --sdist --wheel
+set "RC=%ERRORLEVEL%"
+popd
+if not "%RC%"=="0" goto :failed
+
+if not exist dist mkdir dist
+copy /y "%STAGE%\dist\*" dist\ >nul || goto :failed
+rmdir /s /q "%STAGE%"
 
 echo.
 echo Built into dist\:
@@ -26,6 +44,4 @@ exit /b 0
 :failed
 echo.
 echo Build failed.
-echo If egg_info stopped with a permission or file-lock error, copy the project
-echo to a plain local directory, build there, and move the artifacts back.
 exit /b 1

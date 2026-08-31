@@ -80,10 +80,9 @@ publish.cmd 10.0.1
 
 Both scripts invoke Python through the `py` launcher rather than `python`, because on Windows `python` frequently resolves to the Microsoft Store alias stub, which reports that Python was not found instead of running. They also install `build` / `twine` on demand, since neither is present by default.
 
-- `build.cmd` clears `build/` first: files deleted since the last build otherwise survive there and get packed into the next wheel.
+- `build.cmd` builds from a staged copy under `%TEMP%`, not in place. Building in the working tree fails with `Access is denied` on `egg_info` whenever a file-syncing client, indexer or antivirus is holding it — which the build cannot do anything about. Staging also means files deleted since the last build cannot reach the wheel, since `build/` and `*.egg-info` are never copied across.
 - **`publish.cmd` takes the version** and uploads only that release. `dist/` keeps every earlier build, and PyPI refuses a file that already exists, so an unscoped `twine upload dist/*` fails on the old files before reaching the new ones. It runs `twine check` before uploading.
 - **Publish `easy-py` first** — the plugin's metadata requires the matching SDK version.
-- If `egg_info` stops with a file-lock or permission error — common on Windows when a sync client, indexer or antivirus is holding the tree — copy the project to a plain local directory, build there, and move the artifacts back into `dist/`.
 - Releases are tagged `vX.Y.Z`, matching the published version.
 
 `requirements.txt` is only a dev convenience: it is a single `-e .`, so `pip install -r requirements.txt` gives an editable install and the dependencies come from `setup.py`. It deliberately holds no version list of its own — the duplicate it used to carry drifted out of sync with `setup.py` twice.
