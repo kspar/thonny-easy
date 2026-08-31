@@ -5,7 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="thonny-lahendus",
-    version="9.2.0",
+    # Must be exactly three numeric components: the plugin's own update check
+    # (EasyExerciseProvider._get_versions) does major, minor, patch = version.split(".").
+    # Only a MAJOR bump makes installed plugins prompt the user to update.
+    version="10.0.0",
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
     license="MIT",
@@ -16,7 +19,7 @@ setuptools.setup(
     url="https://github.com/kspar/easy-thonny",
     packages=setuptools.find_namespace_packages(),
     install_requires=[
-        'easy-py>=0.7.2',
+        'easy-py>=0.8.0',
         'thonny>=4.1.4',
         'pillow>=11.3.0',
         'chevron>=0.13.1',
@@ -29,5 +32,6 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.7',
+    # 3.9 is the real floor: pillow>=11.3.0 requires it, and so does the Flask stack easy-py pulls in
+    python_requires='>=3.9',
 )

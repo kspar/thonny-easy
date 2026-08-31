@@ -2,9 +2,10 @@ import configparser
 import logging
 import re
 import time
+from importlib.metadata import version as installed_version
 from typing import Tuple, List, Union, Callable
+from urllib.parse import urljoin
 
-import pkg_resources
 import requests
 from easy import Ez, AuthRequiredException, decode_token, ErrorResponseException
 from thonny import THONNY_USER_DIR
@@ -28,6 +29,11 @@ SUBMIT_SOLUTION_RE = re.compile(r"^/student/courses/([0-9]+)/exercises/([0-9]+)/
 
 PRODUCTION = True
 
+# The website host, used for links and the post-logout redirect. Not necessarily the OIDC client id:
+# on dev, the client id is "lahendus.ut.ee" (see https://dev.lahendus.ut.ee/config.json) while the site
+# is dev.lahendus.ut.ee.
+SITE_HOST = "lahendus.ut.ee" if PRODUCTION else "dev.lahendus.ut.ee"
+
 logger = logging.getLogger(__name__)
 
 
@@ -40,13 +46,15 @@ def _get_easy(lang):
                   'idp.lahendus.ut.ee',
                   "lahendus.ut.ee",
                   auth_browser_success_msg=auth_browser_success_msg,
-                  auth_browser_fail_msg=auth_browser_fail_msg)
+                  auth_browser_fail_msg=auth_browser_fail_msg,
+                  logout_redirect_url=f"https://{SITE_HOST}")
     else:
         return Ez("dev.ems.lahendus.ut.ee",
                   'dev.idp.lahendus.ut.ee',
-                  "dev.lahendus.ut.ee",
+                  "lahendus.ut.ee",
                   auth_browser_success_msg=auth_browser_success_msg,
-                  auth_browser_fail_msg=auth_browser_fail_msg)
+                  auth_browser_fail_msg=auth_browser_fail_msg,
+                  logout_redirect_url=f"https://{SITE_HOST}")
 
 
 # noinspection DuplicatedCode
@@ -68,6 +76,7 @@ class EasyExerciseProvider(ExerciseProvider):
         self.last_update_check = None
         self.config = config
         self.lang = lang
+        self.site_host = SITE_HOST
 
     def get_html_and_breadcrumbs(self, url: str, form_data: FormData) -> Tuple[str, List[Tuple[str, str]]]:
         logger.info(f"User query: '{url}'. Form data: '{form_data}'.")
@@ -151,6 +160,12 @@ class EasyExerciseProvider(ExerciseProvider):
 
             return generate_error_html(e), [self._breadcrumb_courses()]
 
+    def get_image(self, url) -> bytes:
+        # Exercise descriptions carry root-relative image src values ("/v2/resource/<key>/<file>"),
+        # which urlopen cannot fetch. Resolve them against the API base URL; urljoin replaces the
+        # whole path, so the base's own /v2 does not double up, and absolute URLs pass through. (EZ-1805)
+        return super().get_image(urljoin(self.easy.util.api_url, url))
+
     def _logout(self):
         self.easy.logout_in_browser()
         self.easy.shutdown()
@@ -211,14 +226,16 @@ class EasyExerciseProvider(ExerciseProvider):
 
     @staticmethod
     def _get_versions():
-        logger.info("Getting the installed plugin-in version info via pkg_resources...")
-        installed_version = pkg_resources.require("thonny-lahendus")[0].version
+        logger.info("Getting the installed plugin-in version info...")
+        # importlib.metadata, not pkg_resources: the latter ships with setuptools, which is absent
+        # from Thonny's bundled Python, so importing it broke the whole view on startup.
+        current_version = installed_version("thonny-lahendus")
 
         logger.info("Getting the latest plugin-in version info via pypi...")
-        resp: requests.Response = requests.get("https://pypi.org/pypi/thonny-lahendus/json")
+        resp: requests.Response = requests.get("https://pypi.org/pypi/thonny-lahendus/json", timeout=10)
         latest_version = resp.json()["info"]["version"]
 
-        versions = {"current": installed_version, "latest": latest_version}
+        versions = {"current": current_version, "latest": latest_version}
         logger.info(f"Plug-in version info: {versions}")
         return versions
 
@@ -236,9 +253,18 @@ class EasyExerciseProvider(ExerciseProvider):
             return False
 
         logger.info("Checking for plug-in update...")
-        versions = self._get_versions()
-        major_installed, minor_installed, patch_installed = tuple(map(int, versions["current"].split(".")))
-        major_latest, minor_latest, patch_latest = tuple(map(int, versions["latest"].split(".")))
+        try:
+            versions = self._get_versions()
+            # Only the major component decides, so only it is parsed: a version with a different
+            # number of components must not raise here, since this runs before every page render.
+            major_installed = int(versions["current"].split(".")[0])
+            major_latest = int(versions["latest"].split(".")[0])
+        except Exception as e:
+            # PyPI can be unreachable and the installed metadata can be missing; neither is a
+            # reason to replace the page the student asked for with an error
+            logger.warning(f"Plug-in update check failed, continuing without it: {e!r}")
+            self.last_update_check = time.time()
+            return False
 
         update_required = major_installed < major_latest
         if not update_required:

@@ -2,9 +2,11 @@ import json
 import logging
 import os
 from datetime import datetime
+from html import escape
 from typing import Dict
 
 import chevron
+from easy import ErrorResponseException
 
 from thonnycontrib.easy.ui import EDITOR_CONTENT_NAME
 
@@ -145,7 +147,11 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "GAVE_INPUTS": "Inputs provided to the program",
                   "OUTPUT_WAS": "The program's full output",
                   "EXCEPTION": "There was an exception during the program's execution",
-                  "CREATED_FILES": "Before running the program, the following files were created"
+                  "CREATED_FILES": "Before running the program, the following files were created",
+                  "INLINE_COMMENTS": "Comments on the code",
+                  "SUGGESTION": "Suggested code",
+                  "LINE": "Line",
+                  "LINES": "Lines"
                   }
 
     strings_et = {"CLOSED_DENIED_INFO": "See ülesanne on suletud ja ei luba enam uusi esitusi",
@@ -159,37 +165,40 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                   "GAVE_INPUTS": "Andsin programmile sisendid",
                   "OUTPUT_WAS": "Programmi täielik väljund oli",
                   "EXCEPTION": "Programmi käivitamisel tekkis viga",
-                  "CREATED_FILES": "Enne programmi käivitamist lõin failid"
+                  "CREATED_FILES": "Enne programmi käivitamist lõin failid",
+                  "INLINE_COMMENTS": "Kommentaarid koodile",
+                  "SUGGESTION": "Soovitatud kood",
+                  "LINE": "Rida",
+                  "LINES": "Read"
                   }
 
     strings = strings_et if lang == "et" else strings_en
 
     details = provider.easy.student.get_exercise_details(course_id, exercise_id)
 
+    def _format_date(date_str):
+        try:
+            return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').strftime('%d.%m.%Y %H:%M')
+        except (ValueError, TypeError):
+            return date_str  # In case of a formatting error, leave it as is
+
+    def _format_teacher_name(entity):
+        teacher = entity.get("teacher") or {}
+        return escape((teacher.get("given_name") or "") + " " + (teacher.get("family_name") or ""))
+
     def _format_teacher_activity(ta, lang="et"):
         if ta is None:
             ta = {}
 
-        feedback = ta.get("feedback", {})
-        if feedback is None:
-            feedback = {}
+        teacher = _format_teacher_name(ta)
 
-        teacher = ta.get("teacher", {})
-        teacher = teacher.get("given_name", "") + " " + teacher.get("family_name", "")
-
-        feedback_html = feedback.get("feedback_html", "")
+        # v4.0 has feedback_html flat on the activity; older servers nest it under "feedback".
+        # `or ""` because the field is nullable server-side - None would render as "None".
+        feedback_html = ta.get("feedback_html") or (ta.get("feedback") or {}).get("feedback_html") or ""
         grade = ta.get("grade", "")
-        created_at = ta.get("created_at", "")
+        created_at = _format_date(ta.get("created_at", ""))
         submission_number = ta.get("submission_number", "")
 
-        # Format the date
-        try:
-            date_obj = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ')
-            created_at = date_obj.strftime('%d.%m.%Y %H:%M')
-        except ValueError:
-            pass  # In case of a formatting error, leave it as is
-
-        logger.error(grade)
         if grade == "" or grade is None:
             grade_text = ""
         else:
@@ -199,6 +208,29 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
         html_output = f"<br/>    - {teacher} · {created_at} · {submission_text}{grade_text}<br/>"
         if feedback_html:
             html_output += f"{feedback_html}"
+
+        return html_output
+
+    def _format_inline_comment(comment):
+        teacher = _format_teacher_name(comment)
+        created_at = _format_date(comment.get("created_at", ""))
+
+        line_start, line_end = comment.get("line_start"), comment.get("line_end")
+        if line_end is None or line_end == line_start:
+            lines_text = f"{strings['LINE']} {line_start}"
+        else:
+            lines_text = f"{strings['LINES']} {line_start}-{line_end}"
+
+        html_output = f"<br/>    - {teacher} · {created_at} · {lines_text}<br/>"
+        code = comment.get("code")
+        if code:
+            html_output += f"<pre><code>{escape(code)}</code></pre>"
+        if comment.get("text_html"):
+            html_output += comment["text_html"]
+        # No `type` field: a non-null suggested_code is what makes a comment a suggestion
+        suggested_code = comment.get("suggested_code")
+        if suggested_code:
+            html_output += f"<div>{strings['SUGGESTION']}:</div><pre><code>{escape(suggested_code)}</code></pre>"
 
         return html_output
 
@@ -218,7 +250,8 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                                             "course_id": course_id,
                                             "exercise_id": exercise_id,
                                             "latest_feedback_teacher": None,
-                                            "provider_url": provider.easy.util.idp_client_name} | strings)
+                                            "inline_comments": None,
+                                            "provider_url": provider.site_host} | strings)
     else:
         # Wait or AT assessment finish
         provider.easy.student.await_latest_exercise_submission_details(course_id, exercise_id)
@@ -270,6 +303,18 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
         # Or you can directly sort the list in place:
         teacher_activites = [_format_teacher_activity(ta, lang) for ta in activities] if activities is not None else []
         teacher_activites = "\n\n".join(teacher_activites)
+
+        # Inline comments span all submissions; show only the ones on the submission that is on screen
+        inline_comments = ""
+        try:
+            all_comments = provider.easy.student.get_inline_comments(course_id, exercise_id).inline_comments or []
+            comments = [c for c in all_comments if c.get("submission_number") == latest.get("number")]
+            comments.sort(key=lambda c: (c.get("line_start") or 0, c.get("created_at") or ""))
+            inline_comments = "\n\n".join(_format_inline_comment(c) for c in comments)
+        except ErrorResponseException:
+            # Pre-v4.0 servers do not have the inline-comments endpoint; render the page without it
+            logger.info("Inline comments are not available on this server")
+
         return render("exercise.mustache", {"effective_title": details.effective_title,
                                             "text_html": details.text_html,
                                             "is_open": details.is_open,
@@ -282,4 +327,5 @@ def generate_exercise_html(provider, course_id, exercise_id, lang="et") -> str:
                                             "course_id": course_id,
                                             "exercise_id": exercise_id,
                                             "latest_feedback_teacher": teacher_activites,
-                                            "provider_url": provider.easy.util.idp_client_name} | strings)
+                                            "inline_comments": inline_comments,
+                                            "provider_url": provider.site_host} | strings)
