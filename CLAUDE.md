@@ -75,16 +75,21 @@ For anything auth- or UI-shaped, run the real thing: `PRODUCTION = False`, `pip 
 
 ```bash
 build.cmd
+publish.cmd 10.0.1
 ```
 
-- Clear `build/` first, or files deleted since the last build leak into the wheel.
-- If `egg_info` fails with a file-lock or permission error — common on Windows when a sync client, indexer or antivirus is holding the tree — build from a copy in a plain local directory and move the artifacts back into `dist/`.
-- `publish.cmd` runs `twine upload dist/*`, which tries to re-upload every older release still sitting in `dist/` and fails. Scope it: `python -m twine upload dist/thonny_lahendus-10.0.0*`.
+Both scripts invoke Python through the `py` launcher rather than `python`, because on Windows `python` frequently resolves to the Microsoft Store alias stub, which reports that Python was not found instead of running. They also install `build` / `twine` on demand, since neither is present by default.
+
+- `build.cmd` clears `build/` first: files deleted since the last build otherwise survive there and get packed into the next wheel.
+- **`publish.cmd` takes the version** and uploads only that release. `dist/` keeps every earlier build, and PyPI refuses a file that already exists, so an unscoped `twine upload dist/*` fails on the old files before reaching the new ones. It runs `twine check` before uploading.
 - **Publish `easy-py` first** — the plugin's metadata requires the matching SDK version.
-- Releases are tagged `vX.Y.Z` (`v9.2.0`, `v10.0.0`, ...).
+- If `egg_info` stops with a file-lock or permission error — common on Windows when a sync client, indexer or antivirus is holding the tree — copy the project to a plain local directory, build there, and move the artifacts back into `dist/`.
+- Releases are tagged `vX.Y.Z`, matching the published version.
+
+`requirements.txt` is only a dev convenience: it is a single `-e .`, so `pip install -r requirements.txt` gives an editable install and the dependencies come from `setup.py`. It deliberately holds no version list of its own — the duplicate it used to carry drifted out of sync with `setup.py` twice.
 
 `.gitignore` here covers only `__pycache__` and `.idea`, so `build/`, `dist/` and `*.egg-info` show as untracked — take care not to sweep them into a commit.
 
 ## Background
 
-10.0.0 (2026-08) fixed a startup crash on Thonny 5 (`pkg_resources`), restored teacher feedback after the v4.0 response was flattened, made exercise images render for the first time, and added inline comments. The companion SDK release is easy-py 0.8.0, which rewrote login; see `../easy-py/PLAN-EZ-1803-1806.md` for the full account.
+The 10.x line (2026-08) fixed a startup crash on Thonny 5 (`pkg_resources`), restored teacher feedback after the v4.0 response was flattened, made exercise images render for the first time, and added inline comments. The companion SDK release is easy-py 0.8.0, which rewrote login; see `../easy-py/PLAN-EZ-1803-1806.md` for the full account.

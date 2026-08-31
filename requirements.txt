@@ -1,5 +1,9 @@
-easy-py>=0.7.2
-thonny>=4.1.4
-pillow>=11.3.0
-chevron>=0.13.1
-requests>=2.27.1
+# Dev setup:  pip install -r requirements.txt
+#
+# Installs this package in editable mode and takes its dependencies from
+# setup.py, so there is no second copy of the version floors to keep in sync.
+-e .
+
+# When working on the SDK at the same time, install it from the sibling
+# checkout instead of PyPI:
+# -e ../easy-py
