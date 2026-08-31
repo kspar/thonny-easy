@@ -8,7 +8,7 @@ setuptools.setup(
     # Must be exactly three numeric components: the plugin's own update check
     # (EasyExerciseProvider._get_versions) does major, minor, patch = version.split(".").
     # Only a MAJOR bump makes installed plugins prompt the user to update.
-    version="10.0.0",
+    version="10.0.1",
     author="Priit Paluoja",
     author_email="priit.paluoja@gmail.com",
     license="MIT",
