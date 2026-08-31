@@ -61,11 +61,7 @@ The update check is the plugin's own tripwire and it constrains what you may pub
 
 ## Thonny hosting
 
-Thonny bundles its own interpreter and installs plugins into `%APPDATA%\Thonny\plugins\Python<XYZ>\site-packages` — Thonny 5 uses Python 3.14. That environment is not your system Python and is missing things you may assume, setuptools included. When touching imports, dependencies, or anything version-related, verify against it:
-
-```bash
-"C:/Program Files/Thonny/python.exe" -m venv venv314
-```
+Thonny bundles its own interpreter and installs plugins into its own user directory, not into a system Python — on Windows that is `%APPDATA%\Thonny\plugins\Python<XYZ>\site-packages`. Thonny 5 bundles Python 3.14. That environment is missing things you may assume are present, setuptools included. When touching imports, dependencies, or anything version-related, verify against it by making a venv from the interpreter inside the Thonny installation.
 
 Installing the plugin there must also *upgrade* whatever the previous release pinned, which a fresh-venv test does not exercise — an already-satisfied floor leaves an old, possibly broken dependency in place.
 
@@ -82,7 +78,7 @@ build.cmd
 ```
 
 - Clear `build/` first, or files deleted since the last build leak into the wheel.
-- Building inside Dropbox can fail with `WinError 5` (Dropbox holds locks during `egg_info`); build from a copy outside Dropbox and move the artifacts back into `dist/`.
+- If `egg_info` fails with a file-lock or permission error — common on Windows when a sync client, indexer or antivirus is holding the tree — build from a copy in a plain local directory and move the artifacts back into `dist/`.
 - `publish.cmd` runs `twine upload dist/*`, which tries to re-upload every older release still sitting in `dist/` and fails. Scope it: `python -m twine upload dist/thonny_lahendus-10.0.0*`.
 - **Publish `easy-py` first** — the plugin's metadata requires the matching SDK version.
 - Releases are tagged `vX.Y.Z` (`v9.2.0`, `v10.0.0`, ...).
